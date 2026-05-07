@@ -23,6 +23,8 @@ import Overview from '@/pages/admin/Overview';
 import Leads from '@/pages/admin/Leads';
 import AdminPlaceholder from '@/pages/admin/AdminPlaceholder';
 import Sponsors from '@/pages/admin/Sponsors';
+import Advertorials from '@/pages/admin/Advertorials';
+import AdvertorialPage from '@/pages/AdvertorialPage';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -56,6 +58,7 @@ const AuthenticatedApp = () => {
       <Route path="/TermsOfService" element={<TermsOfService />} />
       <Route path="/PartnerList" element={<PartnerList />} />
       <Route path="/AdvertisingDisclosure" element={<AdvertisingDisclosure />} />
+      <Route path="/a/:slug" element={<AdvertorialPage />} />
 
       {/* Admin routes */}
       <Route path="/admin" element={<AdminLayout />}>
@@ -70,7 +73,7 @@ const AuthenticatedApp = () => {
         <Route path="services" element={<AdminPlaceholder />} />
         <Route path="blog" element={<AdminPlaceholder />} />
         <Route path="seo" element={<AdminPlaceholder />} />
-        <Route path="advertorials" element={<AdminPlaceholder />} />
+        <Route path="advertorials" element={<Advertorials />} />
         <Route path="experiments" element={<AdminPlaceholder />} />
         <Route path="chatbot" element={<AdminPlaceholder />} />
         <Route path="integrations" element={<AdminPlaceholder />} />
