@@ -1,0 +1,42 @@
+{
+  "name": "CTATemplate",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "heading": {
+      "type": "string"
+    },
+    "body": {
+      "type": "string"
+    },
+    "button_text": {
+      "type": "string"
+    },
+    "button_url": {
+      "type": "string"
+    },
+    "style": {
+      "type": "string",
+      "enum": [
+        "primary",
+        "secondary",
+        "gold",
+        "dark"
+      ],
+      "default": "primary"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive"
+      ],
+      "default": "active"
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

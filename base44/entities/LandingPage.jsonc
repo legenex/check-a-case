@@ -1,0 +1,132 @@
+{
+  "name": "LandingPage",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "slug": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "published",
+        "draft",
+        "archived"
+      ],
+      "default": "draft"
+    },
+    "campaign_id": {
+      "type": "string"
+    },
+    "quiz_id": {
+      "type": "string"
+    },
+    "hero_heading": {
+      "type": "string"
+    },
+    "hero_subheading": {
+      "type": "string"
+    },
+    "hero_image_url": {
+      "type": "string"
+    },
+    "hero_cta_text": {
+      "type": "string"
+    },
+    "story_paragraphs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "stat_card_primary": {
+      "type": "string"
+    },
+    "stat_card_secondary": {
+      "type": "string"
+    },
+    "authority_bullets": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "whats_at_stake_bullets": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "eligibility_bullets": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "signs_section": {
+      "type": "object"
+    },
+    "recent_settlements": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "guarantees": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "testimonials": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "faq": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "question": {
+            "type": "string"
+          },
+          "answer": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "time_sensitivity_note": {
+      "type": "string"
+    },
+    "final_cta_heading": {
+      "type": "string"
+    },
+    "final_cta_body": {
+      "type": "string"
+    },
+    "seo_title": {
+      "type": "string"
+    },
+    "seo_description": {
+      "type": "string"
+    },
+    "og_image_url": {
+      "type": "string"
+    },
+    "slug_redirects": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "title",
+    "slug"
+  ]
+}

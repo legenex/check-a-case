@@ -4,6 +4,9 @@ module.exports = {
     content: ["./index.html", "./src/**/*.{ts,tsx,js,jsx}"],
   theme: {
   	extend: {
+  		fontFamily: {
+  			inter: ['var(--font-inter)'],
+  		},
   		borderRadius: {
   			lg: 'var(--radius)',
   			md: 'calc(var(--radius) - 2px)',
@@ -49,6 +52,10 @@ module.exports = {
   				'3': 'hsl(var(--chart-3))',
   				'4': 'hsl(var(--chart-4))',
   				'5': 'hsl(var(--chart-5))'
+  			},
+  			navy: {
+  				DEFAULT: 'hsl(var(--navy))',
+  				foreground: 'hsl(var(--navy-foreground))'
   			},
   			sidebar: {
   				DEFAULT: 'hsl(var(--sidebar-background))',

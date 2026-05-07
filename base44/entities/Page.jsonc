@@ -1,0 +1,66 @@
+{
+  "name": "Page",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "slug": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "published",
+        "draft",
+        "archived"
+      ],
+      "default": "draft"
+    },
+    "body_blocks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "hero",
+              "prose",
+              "image",
+              "cta",
+              "bullet_list",
+              "embed",
+              "cards",
+              "stats",
+              "testimonials",
+              "faq"
+            ]
+          },
+          "content": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "meta_title": {
+      "type": "string"
+    },
+    "meta_description": {
+      "type": "string"
+    },
+    "og_image_url": {
+      "type": "string"
+    },
+    "slug_redirects": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "title",
+    "slug"
+  ]
+}

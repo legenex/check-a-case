@@ -1,0 +1,51 @@
+{
+  "name": "RecentWin",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Winner name (e.g. Mike P)"
+    },
+    "age": {
+      "type": "number",
+      "description": "Age of the claimant"
+    },
+    "city": {
+      "type": "string"
+    },
+    "state": {
+      "type": "string"
+    },
+    "amount": {
+      "type": "number",
+      "description": "Settlement amount in dollars"
+    },
+    "accident_type": {
+      "type": "string",
+      "enum": [
+        "auto",
+        "slip_fall",
+        "work",
+        "medical_malpractice",
+        "other"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "published",
+        "draft",
+        "archived"
+      ],
+      "default": "published"
+    },
+    "display_order": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "required": [
+    "name",
+    "amount"
+  ]
+}

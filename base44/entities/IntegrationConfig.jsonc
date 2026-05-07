@@ -1,0 +1,53 @@
+{
+  "name": "IntegrationConfig",
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": [
+        "search_console",
+        "ga4",
+        "meta_ads",
+        "gtm",
+        "smtp",
+        "slack",
+        "custom_webhook",
+        "trusted_form",
+        "hlr_lookup"
+      ]
+    },
+    "label": {
+      "type": "string"
+    },
+    "enabled": {
+      "type": "boolean",
+      "default": false
+    },
+    "credentials": {
+      "type": "object",
+      "description": "Encrypted credentials"
+    },
+    "settings": {
+      "type": "object"
+    },
+    "last_sync": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "test_status": {
+      "type": "string",
+      "enum": [
+        "untested",
+        "success",
+        "failed"
+      ],
+      "default": "untested"
+    },
+    "test_message": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "type"
+  ]
+}

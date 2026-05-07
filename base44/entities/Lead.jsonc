@@ -1,0 +1,106 @@
+{
+  "name": "Lead",
+  "type": "object",
+  "properties": {
+    "first_name": {
+      "type": "string"
+    },
+    "last_name": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string",
+      "format": "email"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "zip_code": {
+      "type": "string"
+    },
+    "state": {
+      "type": "string"
+    },
+    "accident_type": {
+      "type": "string"
+    },
+    "accident_date": {
+      "type": "string"
+    },
+    "at_fault": {
+      "type": "string"
+    },
+    "injury_severity": {
+      "type": "string"
+    },
+    "medical_treatment": {
+      "type": "string"
+    },
+    "time_since_accident": {
+      "type": "string"
+    },
+    "qualification": {
+      "type": "string",
+      "enum": [
+        "qualified",
+        "soft_dq",
+        "hard_dq"
+      ],
+      "default": "qualified"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "new",
+        "contacted",
+        "in_progress",
+        "converted",
+        "lost",
+        "archived"
+      ],
+      "default": "new"
+    },
+    "quiz_id": {
+      "type": "string"
+    },
+    "quiz_answers": {
+      "type": "object",
+      "description": "Full quiz answers JSON"
+    },
+    "attribution": {
+      "type": "object",
+      "description": "UTM params, s2, gclid, fbclid, ttclid, event_id"
+    },
+    "source": {
+      "type": "string"
+    },
+    "campaign": {
+      "type": "string"
+    },
+    "trusted_form_cert_url": {
+      "type": "string"
+    },
+    "hlr_result": {
+      "type": "object"
+    },
+    "delivery_log": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "status_history": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "first_name",
+    "phone"
+  ]
+}

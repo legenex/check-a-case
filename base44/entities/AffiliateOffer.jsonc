@@ -1,0 +1,47 @@
+{
+  "name": "AffiliateOffer",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "image_url": {
+      "type": "string"
+    },
+    "target_url": {
+      "type": "string"
+    },
+    "display_on_pages": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "Submitted",
+          "Thanks",
+          "Sorry",
+          "All"
+        ]
+      }
+    },
+    "display_order": {
+      "type": "number",
+      "default": 0
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive",
+        "archived"
+      ],
+      "default": "active"
+    }
+  },
+  "required": [
+    "title",
+    "target_url"
+  ]
+}

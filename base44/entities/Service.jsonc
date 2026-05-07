@@ -1,0 +1,58 @@
+{
+  "name": "Service",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "slug": {
+      "type": "string"
+    },
+    "icon": {
+      "type": "string",
+      "description": "Lucide icon name"
+    },
+    "summary": {
+      "type": "string"
+    },
+    "body": {
+      "type": "string",
+      "description": "Markdown content"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "published",
+        "draft",
+        "archived"
+      ],
+      "default": "draft"
+    },
+    "featured_order": {
+      "type": "number",
+      "default": 0
+    },
+    "pricing_model": {
+      "type": "string"
+    },
+    "meta_title": {
+      "type": "string"
+    },
+    "meta_description": {
+      "type": "string"
+    },
+    "og_image_url": {
+      "type": "string"
+    },
+    "slug_redirects": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "title",
+    "slug"
+  ]
+}

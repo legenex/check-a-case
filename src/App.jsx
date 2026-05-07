@@ -5,12 +5,27 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
-// Add page imports here
+
+// Public pages
+import Home from '@/pages/Home';
+import Survey from '@/pages/Survey';
+import Submitted from '@/pages/Submitted';
+import Thanks from '@/pages/Thanks';
+import Sorry from '@/pages/Sorry';
+import PrivacyPolicy from '@/pages/PrivacyPolicy';
+import TermsOfService from '@/pages/TermsOfService';
+import PartnerList from '@/pages/PartnerList';
+import AdvertisingDisclosure from '@/pages/AdvertisingDisclosure';
+
+// Admin layout + pages
+import AdminLayout from '@/components/admin/AdminLayout';
+import Overview from '@/pages/admin/Overview';
+import Leads from '@/pages/admin/Leads';
+import AdminPlaceholder from '@/pages/admin/AdminPlaceholder';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
 
-  // Show loading spinner while checking app public settings or auth
   if (isLoadingPublicSettings || isLoadingAuth) {
     return (
       <div className="fixed inset-0 flex items-center justify-center">
@@ -19,29 +34,55 @@ const AuthenticatedApp = () => {
     );
   }
 
-  // Handle authentication errors
   if (authError) {
     if (authError.type === 'user_not_registered') {
       return <UserNotRegisteredError />;
     } else if (authError.type === 'auth_required') {
-      // Redirect to login automatically
       navigateToLogin();
       return null;
     }
   }
 
-  // Render the main app
   return (
     <Routes>
-      {/* Add your page Route elements here */}
+      {/* Public routes */}
+      <Route path="/" element={<Home />} />
+      <Route path="/Survey" element={<Survey />} />
+      <Route path="/Submitted" element={<Submitted />} />
+      <Route path="/Thanks" element={<Thanks />} />
+      <Route path="/Sorry" element={<Sorry />} />
+      <Route path="/PrivacyPolicy" element={<PrivacyPolicy />} />
+      <Route path="/TermsOfService" element={<TermsOfService />} />
+      <Route path="/PartnerList" element={<PartnerList />} />
+      <Route path="/AdvertisingDisclosure" element={<AdvertisingDisclosure />} />
+
+      {/* Admin routes */}
+      <Route path="/admin" element={<AdminLayout />}>
+        <Route index element={<Overview />} />
+        <Route path="leads" element={<Leads />} />
+        <Route path="analytics" element={<AdminPlaceholder />} />
+        <Route path="numbers" element={<AdminPlaceholder />} />
+        <Route path="quizzes" element={<AdminPlaceholder />} />
+        <Route path="landing-pages" element={<AdminPlaceholder />} />
+        <Route path="pages" element={<AdminPlaceholder />} />
+        <Route path="services" element={<AdminPlaceholder />} />
+        <Route path="blog" element={<AdminPlaceholder />} />
+        <Route path="seo" element={<AdminPlaceholder />} />
+        <Route path="advertorials" element={<AdminPlaceholder />} />
+        <Route path="experiments" element={<AdminPlaceholder />} />
+        <Route path="chatbot" element={<AdminPlaceholder />} />
+        <Route path="integrations" element={<AdminPlaceholder />} />
+        <Route path="tracking" element={<AdminPlaceholder />} />
+        <Route path="users" element={<AdminPlaceholder />} />
+        <Route path="settings" element={<AdminPlaceholder />} />
+      </Route>
+
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
 };
 
-
 function App() {
-
   return (
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>

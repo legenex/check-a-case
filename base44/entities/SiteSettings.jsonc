@@ -1,0 +1,60 @@
+{
+  "name": "SiteSettings",
+  "type": "object",
+  "properties": {
+    "brand_name": {
+      "type": "string",
+      "default": "Check A Case"
+    },
+    "tagline": {
+      "type": "string",
+      "default": "Get the compensation you deserve"
+    },
+    "logo_light_url": {
+      "type": "string"
+    },
+    "logo_dark_url": {
+      "type": "string"
+    },
+    "footer_logo_url": {
+      "type": "string"
+    },
+    "favicon_url": {
+      "type": "string"
+    },
+    "default_phone_display": {
+      "type": "string",
+      "default": "(888) 454-6304"
+    },
+    "default_phone_tel": {
+      "type": "string",
+      "default": "tel:+18884546304"
+    },
+    "default_email": {
+      "type": "string",
+      "default": "help@checkacase.com"
+    },
+    "legal_entity": {
+      "type": "string",
+      "default": "NJA-Online LLC"
+    },
+    "domain": {
+      "type": "string",
+      "default": "checkacase.com"
+    },
+    "default_footer_text": {
+      "type": "string"
+    },
+    "legal_links": {
+      "type": "object"
+    },
+    "cookie_banner_enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "cookie_banner_copy": {
+      "type": "string"
+    }
+  },
+  "required": []
+}

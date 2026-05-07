@@ -1,0 +1,118 @@
+{
+  "name": "Quiz",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "slug": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "published",
+        "draft",
+        "archived"
+      ],
+      "default": "draft"
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "single_select",
+              "multi_select",
+              "text",
+              "number",
+              "date",
+              "phone",
+              "email",
+              "state_select",
+              "contact_form"
+            ]
+          },
+          "question": {
+            "type": "string"
+          },
+          "subtitle": {
+            "type": "string"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "string"
+                },
+                "icon": {
+                  "type": "string"
+                },
+                "dq_flag": {
+                  "type": "string",
+                  "enum": [
+                    "none",
+                    "soft_dq",
+                    "hard_dq"
+                  ]
+                }
+              }
+            }
+          },
+          "required": {
+            "type": "boolean",
+            "default": true
+          },
+          "auto_advance": {
+            "type": "boolean",
+            "default": true
+          },
+          "branch_rules": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        }
+      }
+    },
+    "settings": {
+      "type": "object",
+      "properties": {
+        "auto_advance_delay_ms": {
+          "type": "number",
+          "default": 120
+        },
+        "dq_redirect_hard": {
+          "type": "string",
+          "default": "/Sorry"
+        },
+        "dq_redirect_soft": {
+          "type": "string",
+          "default": "/Thanks"
+        },
+        "success_redirect": {
+          "type": "string",
+          "default": "/Submitted"
+        }
+      }
+    }
+  },
+  "required": [
+    "title"
+  ]
+}

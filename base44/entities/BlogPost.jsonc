@@ -1,0 +1,74 @@
+{
+  "name": "BlogPost",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "slug": {
+      "type": "string"
+    },
+    "excerpt": {
+      "type": "string"
+    },
+    "body": {
+      "type": "string",
+      "description": "Markdown content"
+    },
+    "category": {
+      "type": "string"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "hero_image_url": {
+      "type": "string"
+    },
+    "author": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "published",
+        "draft",
+        "scheduled",
+        "archived"
+      ],
+      "default": "draft"
+    },
+    "published_date": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "seo_title": {
+      "type": "string"
+    },
+    "seo_description": {
+      "type": "string"
+    },
+    "og_image_url": {
+      "type": "string"
+    },
+    "slug_redirects": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "cta_template_id": {
+      "type": "string"
+    },
+    "humanizer_pass_count": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "required": [
+    "title",
+    "slug"
+  ]
+}

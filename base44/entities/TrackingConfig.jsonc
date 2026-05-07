@@ -1,0 +1,43 @@
+{
+  "name": "TrackingConfig",
+  "type": "object",
+  "properties": {
+    "meta_pixel_id": {
+      "type": "string"
+    },
+    "meta_capi_token": {
+      "type": "string"
+    },
+    "meta_dataset_id": {
+      "type": "string"
+    },
+    "meta_bm_id": {
+      "type": "string"
+    },
+    "google_ads_id": {
+      "type": "string"
+    },
+    "ga4_measurement_id": {
+      "type": "string"
+    },
+    "ga4_api_secret": {
+      "type": "string"
+    },
+    "tiktok_pixel_id": {
+      "type": "string"
+    },
+    "tiktok_events_api_token": {
+      "type": "string"
+    },
+    "campaign_overrides": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "event_mappings": {
+      "type": "object"
+    }
+  },
+  "required": []
+}

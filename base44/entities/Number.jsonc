@@ -1,0 +1,52 @@
+{
+  "name": "Number",
+  "type": "object",
+  "properties": {
+    "display_number": {
+      "type": "string",
+      "description": "Formatted display number e.g. (888) 454-6304"
+    },
+    "e164": {
+      "type": "string",
+      "description": "E.164 format e.g. +18884546304"
+    },
+    "tel_url": {
+      "type": "string",
+      "description": "tel: link e.g. tel:+18884546304"
+    },
+    "forwards_to": {
+      "type": "string"
+    },
+    "provider": {
+      "type": "string"
+    },
+    "provider_number_id": {
+      "type": "string"
+    },
+    "label": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive",
+        "archived"
+      ],
+      "default": "active"
+    },
+    "page_paths": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "URL paths this number should appear on. Matching: exact > prefix > wildcard > catch-all"
+    }
+  },
+  "required": [
+    "display_number"
+  ]
+}

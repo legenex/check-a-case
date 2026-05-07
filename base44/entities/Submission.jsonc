@@ -1,0 +1,57 @@
+{
+  "name": "Submission",
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": [
+        "contact_form",
+        "footer_form",
+        "quiz"
+      ],
+      "default": "contact_form"
+    },
+    "name": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "state": {
+      "type": "string"
+    },
+    "zip_code": {
+      "type": "string"
+    },
+    "accident_type": {
+      "type": "string"
+    },
+    "details": {
+      "type": "string"
+    },
+    "form_data": {
+      "type": "object"
+    },
+    "page_source": {
+      "type": "string"
+    },
+    "attribution": {
+      "type": "object"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "new",
+        "reviewed",
+        "archived"
+      ],
+      "default": "new"
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

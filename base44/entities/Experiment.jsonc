@@ -1,0 +1,62 @@
+{
+  "name": "Experiment",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "slug": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "running",
+        "paused",
+        "concluded",
+        "archived"
+      ],
+      "default": "running"
+    },
+    "entity_type": {
+      "type": "string"
+    },
+    "entity_id": {
+      "type": "string"
+    },
+    "variants": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "weight": {
+            "type": "number"
+          },
+          "overrides": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "confidence_threshold": {
+      "type": "number",
+      "default": 95
+    },
+    "winner_variant_id": {
+      "type": "string"
+    },
+    "metrics": {
+      "type": "object"
+    }
+  },
+  "required": [
+    "name",
+    "slug"
+  ]
+}
