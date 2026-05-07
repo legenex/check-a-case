@@ -7,6 +7,9 @@ module.exports = {
   		fontFamily: {
   			inter: ['var(--font-inter)'],
   		},
+  		fontSize: {
+  			'hero': ['clamp(2.5rem, 7vw, 5.5rem)', { lineHeight: '1.05', letterSpacing: '-0.04em', fontWeight: '900' }],
+  		},
   		borderRadius: {
   			lg: 'var(--radius)',
   			md: 'calc(var(--radius) - 2px)',
@@ -57,6 +60,17 @@ module.exports = {
   				DEFAULT: 'hsl(var(--navy))',
   				foreground: 'hsl(var(--navy-foreground))'
   			},
+  			brand: {
+  				navy: 'hsl(var(--brand-navy))',
+  				blue: 'hsl(var(--brand-blue))',
+  				'blue-dark': 'hsl(var(--brand-blue-dark))',
+  				cyan: 'hsl(var(--brand-cyan))',
+  				amber: 'hsl(var(--brand-amber))',
+  			},
+  			surface: {
+  				soft: 'hsl(var(--surface-soft))',
+  				glass: 'hsl(var(--surface-glass))',
+  			},
   			sidebar: {
   				DEFAULT: 'hsl(var(--sidebar-background))',
   				foreground: 'hsl(var(--sidebar-foreground))',
@@ -70,25 +84,22 @@ module.exports = {
   		},
   		keyframes: {
   			'accordion-down': {
-  				from: {
-  					height: '0'
-  				},
-  				to: {
-  					height: 'var(--radix-accordion-content-height)'
-  				}
+  				from: { height: '0' },
+  				to: { height: 'var(--radix-accordion-content-height)' }
   			},
   			'accordion-up': {
-  				from: {
-  					height: 'var(--radix-accordion-content-height)'
-  				},
-  				to: {
-  					height: '0'
-  				}
+  				from: { height: 'var(--radix-accordion-content-height)' },
+  				to: { height: '0' }
+  			},
+  			'pulse-dot': {
+  				'0%, 100%': { opacity: '1', transform: 'scale(1)' },
+  				'50%': { opacity: '0.5', transform: 'scale(0.85)' }
   			}
   		},
   		animation: {
   			'accordion-down': 'accordion-down 0.2s ease-out',
-  			'accordion-up': 'accordion-up 0.2s ease-out'
+  			'accordion-up': 'accordion-up 0.2s ease-out',
+  			'pulse-dot': 'pulse-dot 2s ease-in-out infinite',
   		}
   	}
   },

@@ -1,28 +1,47 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
+import GradientButton from "@/components/ui/GradientButton";
+import FadeUpOnScroll from "@/components/ui/FadeUpOnScroll";
 
 export default function FinalCTA() {
   return (
-    <section className="py-16 sm:py-24 bg-secondary/30">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center space-y-6">
-        <h2 className="text-3xl sm:text-4xl font-bold text-foreground">
-          We Only Get Paid When You Win
-        </h2>
-        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-          All of the emails, paperwork, meetings, calls, court appearances… it's
-          all free unless we win your injury case.
-        </p>
-        <Link to="/Survey?s2=CAC-Home&utm_source=Website">
-          <Button
-            size="lg"
-            className="rounded-xl h-14 px-8 text-base font-bold shadow-lg shadow-primary/25 mt-4"
-          >
-            START YOUR CLAIM NOW
-            <ArrowRight className="ml-2 w-5 h-5" />
-          </Button>
-        </Link>
+    <section className="relative py-20 sm:py-28 overflow-hidden" style={{ background: "linear-gradient(135deg, hsl(210,40%,97%) 0%, hsl(205,79%,93%) 100%)" }}>
+      {/* Confetti-like decorative SVG corners */}
+      <svg className="absolute top-4 left-4 opacity-20 w-20 h-20" viewBox="0 0 80 80" fill="none">
+        <circle cx="10" cy="10" r="4" fill="hsl(208,98%,46%)" />
+        <circle cx="30" cy="5" r="2.5" fill="hsl(195,95%,55%)" />
+        <circle cx="5" cy="35" r="3" fill="hsl(38,95%,55%)" />
+        <rect x="45" y="12" width="6" height="6" rx="1" fill="hsl(208,98%,46%)" transform="rotate(30 45 12)" />
+        <rect x="18" y="50" width="5" height="5" rx="1" fill="hsl(195,95%,55%)" transform="rotate(15 18 50)" />
+      </svg>
+      <svg className="absolute bottom-4 right-4 opacity-20 w-20 h-20" viewBox="0 0 80 80" fill="none">
+        <circle cx="70" cy="70" r="4" fill="hsl(208,98%,46%)" />
+        <circle cx="50" cy="75" r="2.5" fill="hsl(195,95%,55%)" />
+        <circle cx="75" cy="45" r="3" fill="hsl(38,95%,55%)" />
+        <rect x="35" y="62" width="6" height="6" rx="1" fill="hsl(208,98%,46%)" transform="rotate(30 35 62)" />
+        <rect x="60" y="30" width="5" height="5" rx="1" fill="hsl(195,95%,55%)" transform="rotate(15 60 30)" />
+      </svg>
+
+      <div className="relative z-10 max-w-3xl mx-auto px-4 sm:px-6 text-center space-y-6">
+        <FadeUpOnScroll>
+          <h2 className="text-4xl sm:text-5xl font-black tracking-tight text-foreground">
+            We Only Get Paid When You Win
+          </h2>
+        </FadeUpOnScroll>
+        <FadeUpOnScroll delay={0.1}>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            All of the emails, paperwork, meetings, calls, court appearances… it's all free unless we win your injury case.
+          </p>
+        </FadeUpOnScroll>
+        <FadeUpOnScroll delay={0.2}>
+          <Link to="/Survey?s2=CAC-FinalCTA&utm_source=Website">
+            <GradientButton size="lg" className="group">
+              START YOUR CLAIM NOW
+              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+            </GradientButton>
+          </Link>
+        </FadeUpOnScroll>
       </div>
     </section>
   );

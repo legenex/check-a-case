@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -18,8 +18,8 @@
     --primary-foreground: 0 0% 100%;
     --secondary: 205 79% 90%;
     --secondary-foreground: 210 49% 13%;
-    --muted: 0 0% 91%;
-    --muted-foreground: 212 6% 37%;
+    --muted: 210 30% 96%;
+    --muted-foreground: 212 12% 45%;
     --accent: 205 79% 90%;
     --accent-foreground: 210 49% 13%;
     --destructive: 0 84.2% 60.2%;
@@ -33,21 +33,31 @@
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
     --radius: 0.75rem;
-    --sidebar-background: 210 49% 10%;
+
+    /* Brand tokens */
+    --brand-navy: 210 60% 10%;
+    --brand-blue: 208 98% 46%;
+    --brand-blue-dark: 215 95% 35%;
+    --brand-cyan: 195 95% 55%;
+    --brand-amber: 38 95% 55%;
+    --surface-soft: 210 40% 98%;
+    --surface-glass: 210 30% 96%;
+
+    --navy: 210 60% 10%;
+    --navy-foreground: 0 0% 100%;
+
+    --sidebar-background: 210 60% 8%;
     --sidebar-foreground: 210 20% 90%;
     --sidebar-primary: 208 98% 46%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 210 40% 16%;
+    --sidebar-accent: 210 40% 14%;
     --sidebar-accent-foreground: 210 20% 90%;
-    --sidebar-border: 210 30% 18%;
+    --sidebar-border: 210 30% 16%;
     --sidebar-ring: 208 98% 46%;
-
-    --navy: 210 49% 13%;
-    --navy-foreground: 0 0% 100%;
   }
 
   .dark {
-    --background: 210 49% 7%;
+    --background: 210 60% 6%;
     --foreground: 210 20% 95%;
     --card: 210 49% 10%;
     --card-foreground: 210 20% 95%;
@@ -66,22 +76,16 @@
     --border: 210 30% 18%;
     --input: 210 30% 18%;
     --ring: 208 98% 46%;
-    --chart-1: 208 98% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
-    --sidebar-background: 210 49% 7%;
+    --navy: 210 60% 5%;
+    --navy-foreground: 210 20% 95%;
+    --sidebar-background: 210 60% 5%;
     --sidebar-foreground: 210 20% 90%;
     --sidebar-primary: 208 98% 46%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 210 40% 12%;
+    --sidebar-accent: 210 40% 10%;
     --sidebar-accent-foreground: 210 20% 90%;
-    --sidebar-border: 210 30% 14%;
+    --sidebar-border: 210 30% 12%;
     --sidebar-ring: 208 98% 46%;
-
-    --navy: 210 49% 8%;
-    --navy-foreground: 210 20% 95%;
   }
 }
 
@@ -89,7 +93,38 @@
   * {
     @apply border-border outline-ring/50;
   }
-  body {
-    @apply bg-background text-foreground font-inter;
+  html {
+    font-size: 17px;
   }
+  @media (max-width: 768px) {
+    html { font-size: 16px; }
+  }
+  body {
+    @apply bg-background text-foreground font-inter antialiased;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+@layer utilities {
+  .text-gradient-blue {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(90deg, hsl(var(--brand-blue)) 0%, hsl(var(--brand-cyan)) 50%, hsl(var(--brand-blue-dark)) 100%);
+  }
+  .btn-gradient {
+    background-image: linear-gradient(135deg, hsl(var(--brand-blue)) 0%, hsl(var(--brand-blue-dark)) 100%);
+  }
+  .btn-gradient-amber {
+    background-image: linear-gradient(135deg, hsl(var(--brand-amber)) 0%, hsl(38 95% 45%) 100%);
+  }
+}
+
+/* Marquee animation */
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.animate-marquee {
+  animation: marquee 40s linear infinite;
+  display: flex;
+  width: max-content;
 }

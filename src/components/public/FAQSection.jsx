@@ -5,6 +5,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import FadeUpOnScroll from "@/components/ui/FadeUpOnScroll";
 
 const FAQS = [
   {
@@ -39,27 +40,36 @@ const FAQS = [
 
 export default function FAQSection() {
   return (
-    <section id="faq" className="py-16 sm:py-24 bg-background">
+    <section id="faq" className="py-20 sm:py-28 bg-surface-soft">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 className="text-3xl sm:text-4xl font-bold text-center text-foreground mb-12">
-          Frequently Asked Questions
-        </h2>
-        <Accordion type="single" collapsible className="space-y-3">
-          {FAQS.map((faq, i) => (
-            <AccordionItem
-              key={i}
-              value={`faq-${i}`}
-              className="bg-card rounded-xl border border-border px-6 data-[state=open]:shadow-md transition-shadow"
-            >
-              <AccordionTrigger className="text-left text-base font-semibold py-5 hover:no-underline">
-                {faq.q}
-              </AccordionTrigger>
-              <AccordionContent className="text-muted-foreground pb-5 leading-relaxed">
-                {faq.a}
-              </AccordionContent>
-            </AccordionItem>
-          ))}
-        </Accordion>
+        <FadeUpOnScroll className="text-center mb-12">
+          <p className="text-sm font-semibold text-primary uppercase tracking-wider mb-2">Got Questions?</p>
+          <h2 className="text-4xl sm:text-5xl font-black tracking-tight text-foreground mb-3">
+            Frequently Asked Questions
+          </h2>
+          <p className="text-muted-foreground">
+            Common questions from accident victims considering a claim.
+          </p>
+        </FadeUpOnScroll>
+
+        <FadeUpOnScroll delay={0.1}>
+          <Accordion type="single" collapsible className="space-y-3">
+            {FAQS.map((faq, i) => (
+              <AccordionItem
+                key={i}
+                value={`faq-${i}`}
+                className="bg-white rounded-2xl border border-border overflow-hidden data-[state=open]:shadow-md data-[state=open]:border-primary/30 transition-all"
+              >
+                <AccordionTrigger className="text-left text-base font-semibold px-6 py-5 hover:no-underline hover:bg-surface-soft transition-colors">
+                  {faq.q}
+                </AccordionTrigger>
+                <AccordionContent className="text-muted-foreground px-6 pb-5 leading-relaxed">
+                  {faq.a}
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        </FadeUpOnScroll>
       </div>
     </section>
   );

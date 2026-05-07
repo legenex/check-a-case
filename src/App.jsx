@@ -22,6 +22,7 @@ import AdminLayout from '@/components/admin/AdminLayout';
 import Overview from '@/pages/admin/Overview';
 import Leads from '@/pages/admin/Leads';
 import AdminPlaceholder from '@/pages/admin/AdminPlaceholder';
+import Sponsors from '@/pages/admin/Sponsors';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -65,6 +66,7 @@ const AuthenticatedApp = () => {
         <Route path="quizzes" element={<AdminPlaceholder />} />
         <Route path="landing-pages" element={<AdminPlaceholder />} />
         <Route path="pages" element={<AdminPlaceholder />} />
+        <Route path="sponsors" element={<Sponsors />} />
         <Route path="services" element={<AdminPlaceholder />} />
         <Route path="blog" element={<AdminPlaceholder />} />
         <Route path="seo" element={<AdminPlaceholder />} />

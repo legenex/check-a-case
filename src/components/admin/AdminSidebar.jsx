@@ -15,6 +15,7 @@ const NAV_ITEMS = [
   { label: "Quizzes", path: "/admin/quizzes", icon: ClipboardList },
   { label: "Landing Pages", path: "/admin/landing-pages", icon: Layers },
   { label: "Pages", path: "/admin/pages", icon: FileText },
+  { label: "Sponsors", path: "/admin/sponsors", icon: Users2 },
   { label: "Services", path: "/admin/services", icon: Briefcase },
   { label: "Blog Manager", path: "/admin/blog", icon: BookOpen },
   { label: "SEO Manager", path: "/admin/seo", icon: Search },

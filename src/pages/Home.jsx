@@ -12,6 +12,7 @@ import FreeAccidentReview from "@/components/public/FreeAccidentReview";
 import FinalCTA from "@/components/public/FinalCTA";
 import FAQSection from "@/components/public/FAQSection";
 import Footer from "@/components/public/Footer";
+import MobileCTABar from "@/components/public/MobileCTABar";
 
 export default function Home() {
   return (
@@ -29,6 +30,7 @@ export default function Home() {
       <FinalCTA />
       <FAQSection />
       <Footer />
+      <MobileCTABar />
     </div>
   );
 }
