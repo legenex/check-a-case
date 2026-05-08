@@ -1,0 +1,49 @@
+{
+  "name": "ClaimEstimate",
+  "type": "object",
+  "properties": {
+    "lead_id": {
+      "type": "string"
+    },
+    "accident_type": {
+      "type": "string"
+    },
+    "state": {
+      "type": "string"
+    },
+    "injury_severity": {
+      "type": "string"
+    },
+    "medical_bills": {
+      "type": "number"
+    },
+    "missed_work_days": {
+      "type": "number"
+    },
+    "ongoing_treatment": {
+      "type": "string"
+    },
+    "fault": {
+      "type": "string"
+    },
+    "estimate_low": {
+      "type": "number"
+    },
+    "estimate_high": {
+      "type": "number"
+    },
+    "economic_damages": {
+      "type": "number"
+    },
+    "state_factor": {
+      "type": "number"
+    },
+    "tool_source": {
+      "type": "string"
+    },
+    "attribution": {
+      "type": "object"
+    }
+  },
+  "required": []
+}

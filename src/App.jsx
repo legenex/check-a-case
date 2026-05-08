@@ -24,7 +24,22 @@ import Leads from '@/pages/admin/Leads';
 import AdminPlaceholder from '@/pages/admin/AdminPlaceholder';
 import Sponsors from '@/pages/admin/Sponsors';
 import Advertorials from '@/pages/admin/Advertorials';
+import ExperimentsAdmin from '@/pages/admin/Experiments';
 import AdvertorialPage from '@/pages/AdvertorialPage';
+
+// Tools
+import ClaimEstimator from '@/pages/tools/ClaimEstimator';
+import AdjusterSimulator from '@/pages/tools/AdjusterSimulator';
+import CrashClock from '@/pages/tools/CrashClock';
+import LifestyleCost from '@/pages/tools/LifestyleCost';
+import DemandLetter from '@/pages/tools/DemandLetter';
+
+// Landing pages
+import WhatsYourClaimWorth from '@/pages/lp/WhatsYourClaimWorth';
+import BeforeItsTooLate from '@/pages/lp/BeforeItsTooLate';
+import TheLowballTrap from '@/pages/lp/TheLowballTrap';
+import FreeDemandLetter from '@/pages/lp/FreeDemandLetter';
+import TheRealCostOfYourInjury from '@/pages/lp/TheRealCostOfYourInjury';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -60,6 +75,20 @@ const AuthenticatedApp = () => {
       <Route path="/AdvertisingDisclosure" element={<AdvertisingDisclosure />} />
       <Route path="/a/:slug" element={<AdvertorialPage />} />
 
+      {/* Tool routes */}
+      <Route path="/tools/claim-estimator" element={<ClaimEstimator />} />
+      <Route path="/tools/adjuster-simulator" element={<AdjusterSimulator />} />
+      <Route path="/tools/crash-clock" element={<CrashClock />} />
+      <Route path="/tools/lifestyle-cost" element={<LifestyleCost />} />
+      <Route path="/tools/demand-letter" element={<DemandLetter />} />
+
+      {/* Landing pages */}
+      <Route path="/lp/whats-your-claim-worth" element={<WhatsYourClaimWorth />} />
+      <Route path="/lp/before-its-too-late" element={<BeforeItsTooLate />} />
+      <Route path="/lp/the-lowball-trap" element={<TheLowballTrap />} />
+      <Route path="/lp/free-demand-letter" element={<FreeDemandLetter />} />
+      <Route path="/lp/the-real-cost-of-your-injury" element={<TheRealCostOfYourInjury />} />
+
       {/* Admin routes */}
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<Overview />} />
@@ -74,7 +103,7 @@ const AuthenticatedApp = () => {
         <Route path="blog" element={<AdminPlaceholder />} />
         <Route path="seo" element={<AdminPlaceholder />} />
         <Route path="advertorials" element={<Advertorials />} />
-        <Route path="experiments" element={<AdminPlaceholder />} />
+        <Route path="experiments" element={<ExperimentsAdmin />} />
         <Route path="chatbot" element={<AdminPlaceholder />} />
         <Route path="integrations" element={<AdminPlaceholder />} />
         <Route path="tracking" element={<AdminPlaceholder />} />

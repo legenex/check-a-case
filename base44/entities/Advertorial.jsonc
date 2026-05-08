@@ -39,6 +39,36 @@
     "inline_image_url": {
       "type": "string"
     },
+    "mid_image_url": {
+      "type": "string"
+    },
+    "mid_image_eyebrow": {
+      "type": "string",
+      "default": "FREE TOOL"
+    },
+    "mid_image_headline": {
+      "type": "string",
+      "default": "Calculate Your Claim Value in 60 Seconds"
+    },
+    "mid_image_body": {
+      "type": "string"
+    },
+    "mid_image_cta_label": {
+      "type": "string",
+      "default": "Check My Claim Value Now"
+    },
+    "mid_image_cta_url": {
+      "type": "string",
+      "default": "/tools/claim-estimator"
+    },
+    "author_name": {
+      "type": "string",
+      "default": "Sarah Mitchell, Staff Writer"
+    },
+    "read_time_minutes": {
+      "type": "number",
+      "default": 4
+    },
     "mid_cta_text": {
       "type": "string"
     },
