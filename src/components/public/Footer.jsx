@@ -1,23 +1,81 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Mail, Phone, Linkedin, Facebook, Twitter } from "lucide-react";
+import { Mail, Phone, Linkedin, Facebook, Twitter, CheckCircle, Loader2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 
+const US_STATES = [
+  "AL","AK","AZ","AR","CA","CO","CT","DE","DC","FL","GA","HI","ID","IL","IN","IA",
+  "KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ","NM",
+  "NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT","VA","WA",
+  "WV","WI","WY"
+];
+
+const ACCIDENT_TYPES = [
+  "Vehicle Accident",
+  "Work Accident",
+  "Slip & Fall",
+  "Medical Malpractice",
+  "Other",
+];
+
+const inputCls = "w-full h-12 px-4 rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition text-sm";
+const selectCls = "w-full h-12 px-4 rounded-xl bg-white/10 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition text-sm appearance-none";
+const labelCls = "block text-sm font-medium text-white/90 mb-1.5";
+
+function Field({ id, label, required, children }) {
+  return (
+    <div className="space-y-0">
+      <label htmlFor={id} className={labelCls}>
+        {label} {required && <span className="text-red-400">*</span>}
+      </label>
+      {children}
+    </div>
+  );
+}
+
 export default function Footer() {
-  const [form, setForm] = useState({ name: "", email: "", phone: "", state: "", zip_code: "", accident_type: "", details: "" });
   const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState(null); // 'success' | 'error' | null
+  const [firstName, setFirstName] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
-    await base44.entities.Submission.create({ ...form, type: "footer_form", page_source: window.location.pathname });
-    setSubmitted(true);
-    setSubmitting(false);
+    setSubmitStatus(null);
+
+    const formData = new FormData(e.currentTarget);
+    const data = Object.fromEntries(formData.entries());
+    const fName = (data.name || "").split(" ")[0] || data.name;
+    setFirstName(fName);
+
+    try {
+      await base44.integrations.Core.SendEmail({
+        to: "info@checkacase.com",
+        subject: `New Contact Form Submission from ${data.name}`,
+        body: `New contact form submission from checkacase.com:\n\nName: ${data.name}\nEmail: ${data.email}\nPhone: ${data.phone}\nState: ${data.state}\nZip: ${data.zip}\nAccident Type: ${data.accident_type}\n\nDetails:\n${data.details}\n\n---\nSubmitted: ${new Date().toLocaleString()}\nPage: ${window.location.pathname}`,
+      });
+
+      await base44.entities.Lead.create({
+        first_name: fName,
+        last_name: (data.name || "").split(" ").slice(1).join(" ") || "",
+        email: data.email,
+        phone: data.phone,
+        state: data.state,
+        zip_code: data.zip,
+        accident_type: data.accident_type,
+        notes: data.details,
+        source: "footer_contact_form",
+        attribution: JSON.parse(sessionStorage.getItem("cac_attribution") || "{}"),
+      });
+
+      setSubmitStatus("success");
+      e.currentTarget.reset();
+    } catch (err) {
+      console.error("Contact form submission failed:", err);
+      setSubmitStatus("error");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -30,7 +88,7 @@ export default function Footer() {
           <div className="grid lg:grid-cols-4 gap-10 lg:gap-8">
             {/* Brand */}
             <div className="space-y-5">
-              <img src="https://checkacase.com/wp-content/uploads/2023/11/CAC-Logo-Light.png" alt="Check A Case" className="h-10 w-auto" />
+              <img src="https://checkacase.com/wp-content/uploads/2023/11/CAC-Logo-Light.png" alt="Check A Case" className="h-16 lg:h-20 w-auto" />
               <p className="text-white/60 leading-relaxed text-sm">
                 Check A Case is here to help you get the compensation you deserve after a vehicle or work related accident.
               </p>
@@ -67,20 +125,65 @@ export default function Footer() {
             {/* Contact Form */}
             <div className="space-y-4">
               <h3 className="text-sm font-semibold uppercase tracking-wider text-white/40">Contact Us</h3>
-              {submitted ? (
-                <p className="text-white/70 text-sm">Thank you! We'll be in touch soon.</p>
+
+              {submitStatus === "success" ? (
+                <div className="rounded-2xl bg-emerald-500/10 border border-emerald-400/30 p-6 text-center space-y-3">
+                  <CheckCircle className="w-10 h-10 text-emerald-400 mx-auto" />
+                  <p className="font-semibold text-white">Thanks, {firstName}! We've received your message.</p>
+                  <p className="text-sm text-white/70">A member of our team will reach out within 1 business day.</p>
+                  <p className="text-sm text-white/60">To fast-track your case, call us at <a href="tel:+18884546304" className="text-white underline">(888) 454-6304</a>.</p>
+                </div>
               ) : (
-                <form onSubmit={handleSubmit} className="space-y-2.5">
-                  {[["name", "Name", "text", true], ["email", "Email", "email", true], ["phone", "Phone", "tel", true]].map(([field, ph, type, req]) => (
-                    <Input key={field} type={type} placeholder={ph} value={form[field]} onChange={(e) => setForm({ ...form, [field]: e.target.value })} required={req} className="bg-white/8 border-white/15 text-white placeholder:text-white/40 h-10 rounded-xl text-sm focus:border-primary" />
-                  ))}
-                  <div className="grid grid-cols-2 gap-2">
-                    <Input placeholder="State" value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} className="bg-white/8 border-white/15 text-white placeholder:text-white/40 h-10 rounded-xl text-sm" />
-                    <Input placeholder="Zip" value={form.zip_code} onChange={(e) => setForm({ ...form, zip_code: e.target.value })} className="bg-white/8 border-white/15 text-white placeholder:text-white/40 h-10 rounded-xl text-sm" />
+                <form onSubmit={handleSubmit} className="space-y-3">
+                  <Field id="name" label="Full Name" required>
+                    <input id="name" name="name" type="text" required placeholder="Your full name" className={inputCls} />
+                  </Field>
+
+                  <Field id="email" label="Email" required>
+                    <input id="email" name="email" type="email" required placeholder="you@example.com" className={inputCls} />
+                  </Field>
+
+                  <Field id="phone" label="Phone" required>
+                    <input id="phone" name="phone" type="tel" required placeholder="(555) 555-5555" className={inputCls} />
+                  </Field>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field id="state" label="State" required>
+                      <select id="state" name="state" required className={selectCls} defaultValue="">
+                        <option value="" disabled>Select state</option>
+                        {US_STATES.map(s => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </Field>
+                    <Field id="zip" label="Zip Code" required>
+                      <input id="zip" name="zip" type="text" required placeholder="12345" pattern="[0-9]{5}" className={inputCls} />
+                    </Field>
                   </div>
-                  <Textarea placeholder="Accident Details" value={form.details} onChange={(e) => setForm({ ...form, details: e.target.value })} className="bg-white/8 border-white/15 text-white placeholder:text-white/40 rounded-xl text-sm min-h-[60px]" />
-                  <button type="submit" disabled={submitting} className="w-full h-11 rounded-xl font-semibold text-sm text-white btn-gradient shadow-lg shadow-blue-500/20 transition-all hover:brightness-110 disabled:opacity-60">
-                    {submitting ? "Submitting..." : "Submit"}
+
+                  <Field id="accident_type" label="Accident Type" required>
+                    <select id="accident_type" name="accident_type" required className={selectCls} defaultValue="">
+                      <option value="" disabled>Select type</option>
+                      {ACCIDENT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </Field>
+
+                  <Field id="details" label="Accident Details">
+                    <textarea id="details" name="details" rows={4} placeholder="Briefly describe what happened…" className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition text-sm resize-none" />
+                  </Field>
+
+                  {submitStatus === "error" && (
+                    <p className="text-sm text-red-400 bg-red-500/10 border border-red-400/30 rounded-xl px-4 py-3">
+                      Something went wrong. Please try again or call us directly at <a href="tel:+18884546304" className="underline">(888) 454-6304</a>.
+                    </p>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="w-full h-12 rounded-xl font-semibold text-sm text-white btn-gradient shadow-lg shadow-blue-500/20 transition-all hover:brightness-110 disabled:opacity-60 flex items-center justify-center gap-2"
+                  >
+                    {submitting ? (
+                      <><Loader2 className="w-4 h-4 animate-spin" /> Sending…</>
+                    ) : "Send Message"}
                   </button>
                 </form>
               )}
