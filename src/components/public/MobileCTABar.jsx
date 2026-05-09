@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import { Phone, ArrowRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useReducedMotion } from "framer-motion";
+import { buildQuizUrl } from "@/lib/quizUrl";
 
 export default function MobileCTABar() {
   const [visible, setVisible] = useState(false);
@@ -34,13 +34,14 @@ export default function MobileCTABar() {
             <Phone className="w-4 h-4" />
             (888) 454-6304
           </a>
-          <Link
-            to="/Survey?s2=CAC-MobileBar&utm_source=Website"
+          <a
+            href={buildQuizUrl({ defaults: { utm_source: "CAC-Website", utm_medium: "Home_Page" }, ctaContent: "mobile_sticky_cta" })}
+            rel="noopener"
             className="flex-1 flex items-center justify-center gap-2 h-12 rounded-xl font-semibold text-sm text-white btn-gradient shadow-lg shadow-blue-500/25"
           >
             Start Your Claim
             <ArrowRight className="w-4 h-4" />
-          </Link>
+          </a>
         </motion.div>
       )}
     </AnimatePresence>

@@ -1,0 +1,60 @@
+{
+  "name": "BlogBatch",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "seeds": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "seed_options": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "approved_angles": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "generated_post_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "state": {
+      "type": "string",
+      "enum": [
+        "planning",
+        "drafting",
+        "humanizing",
+        "reviewing",
+        "published"
+      ],
+      "default": "planning"
+    },
+    "category": {
+      "type": "string"
+    },
+    "word_count_target": {
+      "type": "number",
+      "default": 1200
+    },
+    "internal_links": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

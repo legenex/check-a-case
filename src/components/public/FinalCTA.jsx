@@ -1,8 +1,8 @@
 import React from "react";
-import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import GradientButton from "@/components/ui/GradientButton";
 import FadeUpOnScroll from "@/components/ui/FadeUpOnScroll";
+import { buildQuizUrl } from "@/lib/quizUrl";
 
 export default function FinalCTA() {
   return (
@@ -35,12 +35,12 @@ export default function FinalCTA() {
           </p>
         </FadeUpOnScroll>
         <FadeUpOnScroll delay={0.2}>
-          <Link to="/Survey?s2=CAC-FinalCTA&utm_source=Website">
+          <a href={buildQuizUrl({ defaults: { utm_source: "CAC-Website", utm_medium: "Home_Page" }, ctaContent: "final_cta" })} rel="noopener">
             <GradientButton size="lg" className="group">
               START YOUR CLAIM NOW
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </GradientButton>
-          </Link>
+          </a>
         </FadeUpOnScroll>
       </div>
     </section>

@@ -1,9 +1,9 @@
 import React from "react";
-import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion } from "framer-motion";
 import FadeUpOnScroll from "@/components/ui/FadeUpOnScroll";
 import GradientButton from "@/components/ui/GradientButton";
+import { buildQuizUrl } from "@/lib/quizUrl";
 
 const PHOTOS = [
   { src: "https://checkacase.com/wp-content/uploads/2023/07/care-team.webp", alt: "Legal care team", large: true },
@@ -52,12 +52,12 @@ export default function LegalTeam() {
               </p>
             </FadeUpOnScroll>
             <FadeUpOnScroll delay={0.25}>
-              <Link to="/Survey?s2=CAC-Team&utm_source=Website">
+              <a href={buildQuizUrl({ defaults: { utm_source: "CAC-Website", utm_medium: "Home_Page" }, ctaContent: "legal_team_cta" })} rel="noopener">
                 <GradientButton size="lg" className="group">
                   SEE IF YOU QUALIFY
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </GradientButton>
-              </Link>
+              </a>
             </FadeUpOnScroll>
           </div>
         </div>

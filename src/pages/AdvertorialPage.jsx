@@ -181,8 +181,8 @@ export default function AdvertorialPage() {
       <style>{DROP_CAP_STYLE}</style>
       <AdvNavbar slug={adv.slug} finalCtaUrl={finalCtaUrl} />
 
-      {/* Spacer for fixed navbar + strip */}
-      <div className="h-[84px]" />
+      {/* Spacer for fixed navbar */}
+      <div className="h-20" />
 
       {/* Hero image — full bleed within 5xl */}
       {adv.hero_image_url && (

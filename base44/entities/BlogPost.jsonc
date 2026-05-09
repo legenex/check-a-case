@@ -44,6 +44,10 @@
       "type": "string",
       "format": "date-time"
     },
+    "scheduled_at": {
+      "type": "string",
+      "format": "date-time"
+    },
     "seo_title": {
       "type": "string"
     },
@@ -63,6 +67,18 @@
       "type": "string"
     },
     "humanizer_pass_count": {
+      "type": "number",
+      "default": 0
+    },
+    "generated_by_ai": {
+      "type": "boolean",
+      "default": false
+    },
+    "read_time_minutes": {
+      "type": "number",
+      "default": 0
+    },
+    "word_count": {
       "type": "number",
       "default": 0
     }

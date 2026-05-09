@@ -1,0 +1,46 @@
+{
+  "name": "OutboundEmailLog",
+  "type": "object",
+  "properties": {
+    "to": {
+      "type": "string"
+    },
+    "subject": {
+      "type": "string"
+    },
+    "body_preview": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "sent",
+        "failed",
+        "retry-pending"
+      ],
+      "default": "failed"
+    },
+    "error_message": {
+      "type": "string"
+    },
+    "lead_id": {
+      "type": "string"
+    },
+    "attempted_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "retry_count": {
+      "type": "number",
+      "default": 0
+    },
+    "last_retry_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "to",
+    "subject"
+  ]
+}

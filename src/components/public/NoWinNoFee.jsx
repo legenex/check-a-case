@@ -1,9 +1,9 @@
 import React from "react";
-import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import GradientButton from "@/components/ui/GradientButton";
 import GradientMesh from "@/components/ui/GradientMesh";
 import FadeUpOnScroll from "@/components/ui/FadeUpOnScroll";
+import { buildQuizUrl } from "@/lib/quizUrl";
 
 export default function NoWinNoFee({ ctaText, ctaUrl }) {
   return (
@@ -30,12 +30,12 @@ export default function NoWinNoFee({ ctaText, ctaUrl }) {
           </div>
         </FadeUpOnScroll>
         <FadeUpOnScroll delay={0.2}>
-          <Link to={ctaUrl || "/Survey?s2=CAC-NoWin&utm_source=Website"}>
+          <a href={ctaUrl || buildQuizUrl({ defaults: { utm_source: "CAC-Website", utm_medium: "Home_Page" }, ctaContent: "no_win_no_fee_cta" })} rel="noopener">
             <GradientButton variant="amber" size="lg" className="group">
               {ctaText || "FIND OUT HOW MUCH YOUR CLAIM COULD BE WORTH"}
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </GradientButton>
-          </Link>
+          </a>
         </FadeUpOnScroll>
       </div>
     </section>

@@ -1,9 +1,10 @@
 import React from "react";
 import { ArrowRight } from "lucide-react";
 import GradientMesh from "@/components/ui/GradientMesh";
+import { buildQuizUrl } from "@/lib/quizUrl";
 
 export default function AdvFinalCta({ finalCtaUrl, slug }) {
-  const primaryHref = finalCtaUrl || `/Survey?s2=ADV-${slug}-final&utm_source=advertorial`;
+  const primaryHref = finalCtaUrl || buildQuizUrl({ defaults: { utm_source: "CAC-Site", utm_medium: slug, utm_campaign: "Advertorial" }, ctaContent: "link_cta_section" });
   const estimatorHref = `/tools/claim-estimator?s2=ADV-${slug}-est&utm_source=advertorial`;
 
   return (

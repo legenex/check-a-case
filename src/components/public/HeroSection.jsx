@@ -1,10 +1,11 @@
-import React from "react";
-import { Link } from "react-router-dom";
+import React, { useEffect } from "react";
 import { ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 import GradientButton from "@/components/ui/GradientButton";
 import GradientMesh from "@/components/ui/GradientMesh";
 import AnimatedCounter from "@/components/ui/AnimatedCounter";
+import { captureAttribution } from "@/lib/attribution";
+import { buildQuizUrl } from "@/lib/quizUrl";
 
 const STATS = [
   { label: "Recovered", value: 847, prefix: "$", suffix: "M+" },
@@ -13,7 +14,11 @@ const STATS = [
   { label: "Win Rate", value: 97, prefix: "", suffix: "%" },
 ];
 
+const HOME_DEFAULTS = { utm_source: "CAC-Website", utm_medium: "Home_Page" };
+
 export default function HeroSection() {
+  useEffect(() => { captureAttribution(); }, []);
+
   return (
     <section className="relative min-h-screen flex items-center overflow-hidden bg-brand-navy pt-16">
       <GradientMesh />
@@ -60,12 +65,12 @@ export default function HeroSection() {
           className="flex flex-col items-center gap-3 mb-16"
         >
           <p className="text-sm text-white/50">Free, no obligation, takes 60 seconds</p>
-          <Link to="/Survey?s2=CAC-Hero&utm_source=Website">
+          <a href={buildQuizUrl({ defaults: HOME_DEFAULTS, ctaContent: "hero_primary_cta" })} rel="noopener">
             <GradientButton size="lg" className="group">
               START YOUR INJURY CLAIM NOW
               <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
             </GradientButton>
-          </Link>
+          </a>
         </motion.div>
 
         {/* Stat counters */}

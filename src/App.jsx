@@ -26,6 +26,8 @@ import Sponsors from '@/pages/admin/Sponsors';
 import Advertorials from '@/pages/admin/Advertorials';
 import ExperimentsAdmin from '@/pages/admin/Experiments';
 import AdvertorialPage from '@/pages/AdvertorialPage';
+import Blog from '@/pages/admin/Blog';
+import Analytics from '@/pages/admin/Analytics';
 
 // Tools
 import ClaimEstimator from '@/pages/tools/ClaimEstimator';
@@ -93,14 +95,14 @@ const AuthenticatedApp = () => {
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<Overview />} />
         <Route path="leads" element={<Leads />} />
-        <Route path="analytics" element={<AdminPlaceholder />} />
+        <Route path="analytics" element={<Analytics />} />
         <Route path="numbers" element={<AdminPlaceholder />} />
         <Route path="quizzes" element={<AdminPlaceholder />} />
         <Route path="landing-pages" element={<AdminPlaceholder />} />
         <Route path="pages" element={<AdminPlaceholder />} />
         <Route path="sponsors" element={<Sponsors />} />
         <Route path="services" element={<AdminPlaceholder />} />
-        <Route path="blog" element={<AdminPlaceholder />} />
+        <Route path="blog" element={<Blog />} />
         <Route path="seo" element={<AdminPlaceholder />} />
         <Route path="advertorials" element={<Advertorials />} />
         <Route path="experiments" element={<ExperimentsAdmin />} />
