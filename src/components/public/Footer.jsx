@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Mail, Phone, Linkedin, Facebook, Twitter, CheckCircle, Loader2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
+import { getAttribution } from "@/lib/attribution";
 
 const US_STATES = [
   "AL","AK","AZ","AR","CA","CO","CT","DE","DC","FL","GA","HI","ID","IL","IN","IA",
@@ -33,15 +34,12 @@ export default function Footer() {
     const data = Object.fromEntries(formData.entries());
     const fName = (data.name || "").split(" ")[0] || data.name;
     setFirstName(fName);
+    const attribution = getAttribution();
 
+    // STEP 1: Lead capture FIRST — if this fails, show error
+    let leadId = null;
     try {
-      await base44.integrations.Core.SendEmail({
-        to: "info@checkacase.com",
-        subject: `New Contact Form Submission from ${data.name}`,
-        body: `New contact form submission from checkacase.com:\n\nName: ${data.name}\nEmail: ${data.email}\nPhone: ${data.phone}\nState: ${data.state}\nZip: ${data.zip}\nAccident Type: ${data.accident_type}\n\nDetails:\n${data.details}\n\n---\nSubmitted: ${new Date().toLocaleString()}\nPage: ${window.location.pathname}`,
-      });
-
-      await base44.entities.Lead.create({
+      const lead = await base44.entities.Lead.create({
         first_name: fName,
         last_name: (data.name || "").split(" ").slice(1).join(" ") || "",
         email: data.email,
@@ -51,17 +49,40 @@ export default function Footer() {
         accident_type: data.accident_type,
         notes: data.details,
         source: "footer_contact_form",
-        attribution: JSON.parse(sessionStorage.getItem("cac_attribution") || "{}"),
+        attribution,
       });
-
+      leadId = lead?.id;
       setSubmitStatus("success");
       e.currentTarget.reset();
-    } catch (err) {
-      console.error("Contact form submission failed:", err);
+    } catch (leadErr) {
+      console.error("Lead creation failed:", leadErr);
       setSubmitStatus("error");
-    } finally {
       setSubmitting(false);
+      return;
     }
+
+    // STEP 2: Email — non-blocking, never surfaces to user
+    const emailSubject = `New Contact Form Submission from ${data.name}`;
+    const emailBody = `New contact form submission from checkacase.com:\n\nName: ${data.name}\nEmail: ${data.email}\nPhone: ${data.phone}\nState: ${data.state}\nZip: ${data.zip}\nAccident Type: ${data.accident_type}\n\nDetails:\n${data.details}\n\nLead ID: ${leadId}\nPage: ${window.location.pathname}\nSubmitted: ${new Date().toLocaleString()}`;
+    try {
+      await base44.integrations.Core.SendEmail({ to: "info@checkacase.com", subject: emailSubject, body: emailBody });
+    } catch (emailErr) {
+      console.warn("Email send failed (lead saved):", emailErr);
+      try {
+        await base44.entities.OutboundEmailLog.create({
+          to: "info@checkacase.com",
+          subject: emailSubject,
+          body_preview: `Lead from ${data.name} / ${data.email}`,
+          status: "failed",
+          error_message: emailErr?.message || String(emailErr),
+          lead_id: leadId,
+          attempted_at: new Date().toISOString(),
+          retry_count: 0,
+        });
+      } catch {} // best-effort logging
+    }
+
+    setSubmitting(false);
   };
 
   return (

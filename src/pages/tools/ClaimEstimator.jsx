@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { buildQuizUrl } from "@/lib/quizUrl";
 import { base44 } from "@/api/base44Client";
 import { calculateEstimate, formatMoney, STATE_FACTORS } from "@/lib/claimCalc";
 import { ArrowRight, ChevronLeft, ShieldCheck, TrendingUp, AlertTriangle } from "lucide-react";
@@ -140,9 +141,7 @@ export default function ClaimEstimator() {
     setSubmitting(false);
   };
 
-  const surveyUrl = result
-    ? `/Survey?s2=TOOL-estimator&utm_source=tool&utm_medium=claim-estimator&utm_content=high-${result.displayHigh}`
-    : "/Survey?s2=TOOL-estimator&utm_source=tool&utm_medium=claim-estimator";
+  const surveyUrl = buildQuizUrl({ defaults: { utm_source: "CAC-Site", utm_medium: "claim-estimator", utm_campaign: "Tool" }, ctaContent: "tool_results_cta" });
 
   return (
     <div className="min-h-screen bg-[#fafafa] flex flex-col">

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import ReactMarkdown from "react-markdown";
-import Footer from "@/components/public/Footer";
+import MinimalLegalFooter from "@/components/public/MinimalLegalFooter";
 import AdvNavbar from "@/components/advertorial/AdvNavbar";
 import InlineMiniCta from "@/components/advertorial/InlineMiniCta";
 import MidSplitBlock from "@/components/advertorial/MidSplitBlock";
@@ -160,7 +160,7 @@ export default function AdvertorialPage() {
           <p className="text-muted-foreground mb-6">This advertorial doesn't exist or has been removed.</p>
           <a href="/" className="text-primary underline">Go home</a>
         </div>
-        <Footer />
+        <MinimalLegalFooter />
       </div>
     );
   }
@@ -257,7 +257,7 @@ export default function AdvertorialPage() {
         </div>
       </article>
 
-      <Footer />
+      <MinimalLegalFooter />
     </div>
   );
 }

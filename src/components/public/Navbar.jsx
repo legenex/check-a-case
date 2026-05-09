@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
-import { Link } from "react-router-dom";
 import { Menu, X, ArrowRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import GradientButton from "@/components/ui/GradientButton";
+import { buildQuizUrl } from "@/lib/quizUrl";
 
 const NAV_LINKS = [
   { label: "Home", href: "/" },
@@ -34,7 +33,7 @@ export default function Navbar() {
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20 lg:h-24">
-            <Link to="/" className="flex-shrink-0">
+            <a href="/" className="flex-shrink-0">
               <img
                 src="https://checkacase.com/wp-content/uploads/2023/05/CAC-Logo-Blue.png"
                 alt="Check A Case"
@@ -45,7 +44,7 @@ export default function Navbar() {
                 alt="Check A Case"
                 className={`h-14 md:h-16 lg:h-20 w-auto transition-opacity duration-300 ${scrolled ? "opacity-0 absolute" : "opacity-100"}`}
               />
-            </Link>
+            </a>
 
             <div className="hidden md:flex items-center gap-8">
               {NAV_LINKS.map((link) => (
@@ -59,11 +58,11 @@ export default function Navbar() {
                   {link.label}
                 </a>
               ))}
-              <Link to="/Survey?s2=CAC-Nav&utm_source=Website">
+              <a href={buildQuizUrl({ defaults: { utm_source: "CAC-Website", utm_medium: "Home_Page" }, ctaContent: "navbar_cta" })} rel="noopener">
                 <GradientButton size="sm">
                   Start Your Claim <ArrowRight className="w-4 h-4" />
                 </GradientButton>
-              </Link>
+              </a>
             </div>
 
             <button
@@ -105,11 +104,11 @@ export default function Navbar() {
               ))}
             </nav>
             <div className="mt-auto">
-              <Link to="/Survey?s2=CAC-Nav-Mobile&utm_source=Website" onClick={() => setOpen(false)}>
+              <a href={buildQuizUrl({ defaults: { utm_source: "CAC-Website", utm_medium: "Home_Page" }, ctaContent: "navbar_cta" })} rel="noopener" onClick={() => setOpen(false)}>
                 <GradientButton className="w-full justify-center">
                   Start Your Claim <ArrowRight className="w-5 h-5" />
                 </GradientButton>
-              </Link>
+              </a>
             </div>
           </motion.div>
         )}

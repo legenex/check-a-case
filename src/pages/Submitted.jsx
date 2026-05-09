@@ -1,7 +1,7 @@
 import React from "react";
 import Navbar from "@/components/public/Navbar";
 import NoWinNoFee from "@/components/public/NoWinNoFee";
-import Footer from "@/components/public/Footer";
+import MinimalLegalFooter from "@/components/public/MinimalLegalFooter";
 import GradientMesh from "@/components/ui/GradientMesh";
 import FadeUpOnScroll from "@/components/ui/FadeUpOnScroll";
 import { CheckCircle, Phone, FileSearch, Briefcase, HandCoins } from "lucide-react";
@@ -68,7 +68,7 @@ export default function Submitted() {
       </section>
 
       <NoWinNoFee />
-      <Footer />
+      <MinimalLegalFooter />
     </div>
   );
 }

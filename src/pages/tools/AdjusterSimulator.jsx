@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { buildQuizUrl } from "@/lib/quizUrl";
 import { base44 } from "@/api/base44Client";
 import { calculateEstimate, formatMoney, STATE_FACTORS } from "@/lib/claimCalc";
 import { ArrowRight, AlertTriangle, TrendingUp, ChevronDown, ChevronUp } from "lucide-react";
@@ -63,7 +64,7 @@ export default function AdjusterSimulator() {
     setSubmitting(false);
   };
 
-  const surveyUrl = "/Survey?s2=TOOL-adjuster&utm_source=tool&utm_medium=adjuster-simulator";
+  const surveyUrl = buildQuizUrl({ defaults: { utm_source: "CAC-Site", utm_medium: "adjuster-simulator", utm_campaign: "Tool" }, ctaContent: "tool_results_cta" });
 
   return (
     <div className="min-h-screen bg-[#fafafa] flex flex-col">

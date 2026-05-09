@@ -1,7 +1,7 @@
 import React from "react";
 import Navbar from "@/components/public/Navbar";
 import NoWinNoFee from "@/components/public/NoWinNoFee";
-import Footer from "@/components/public/Footer";
+import MinimalLegalFooter from "@/components/public/MinimalLegalFooter";
 import GradientMesh from "@/components/ui/GradientMesh";
 import GradientButton from "@/components/ui/GradientButton";
 import { CheckCircle, Phone } from "lucide-react";
@@ -46,7 +46,7 @@ export default function Thanks() {
       </section>
 
       <NoWinNoFee />
-      <Footer />
+      <MinimalLegalFooter />
     </div>
   );
 }

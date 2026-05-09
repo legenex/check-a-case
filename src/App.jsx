@@ -25,9 +25,8 @@ import AdminPlaceholder from '@/pages/admin/AdminPlaceholder';
 import Sponsors from '@/pages/admin/Sponsors';
 import Advertorials from '@/pages/admin/Advertorials';
 import ExperimentsAdmin from '@/pages/admin/Experiments';
-import AdvertorialPage from '@/pages/AdvertorialPage';
 import Blog from '@/pages/admin/Blog';
-import Analytics from '@/pages/admin/Analytics';
+import AdvertorialPage from '@/pages/AdvertorialPage';
 
 // Tools
 import ClaimEstimator from '@/pages/tools/ClaimEstimator';
@@ -95,7 +94,7 @@ const AuthenticatedApp = () => {
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<Overview />} />
         <Route path="leads" element={<Leads />} />
-        <Route path="analytics" element={<Analytics />} />
+        <Route path="analytics" element={<AdminPlaceholder />} />
         <Route path="numbers" element={<AdminPlaceholder />} />
         <Route path="quizzes" element={<AdminPlaceholder />} />
         <Route path="landing-pages" element={<AdminPlaceholder />} />

@@ -1,6 +1,6 @@
 import React from "react";
 import Navbar from "@/components/public/Navbar";
-import Footer from "@/components/public/Footer";
+import MinimalLegalFooter from "@/components/public/MinimalLegalFooter";
 import GradientMesh from "@/components/ui/GradientMesh";
 import { Heart } from "lucide-react";
 import { motion } from "framer-motion";
@@ -26,7 +26,7 @@ export default function Sorry() {
           </motion.p>
         </div>
       </section>
-      <Footer />
+      <MinimalLegalFooter />
     </div>
   );
 }
