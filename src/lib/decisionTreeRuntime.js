@@ -26,6 +26,36 @@ export function getNextNodeId(nodeId, adjacency) {
 }
 
 /**
+ * Get the next node after an answer-bearing node, respecting per-answer source handles.
+ * Priority:
+ *   1. Edge whose source_handle matches the selectedOptionId
+ *   2. Edge whose source_handle is "default" or empty/null (fallback)
+ *   3. null (no route found)
+ *
+ * For multi-select, pass the first matched option or iterate externally.
+ */
+export function getNextNodeAfterAnswer(nodeId, selectedOptionId, adjacency) {
+  const outgoing = adjacency[nodeId] || [];
+
+  // 1. Per-answer edge match
+  if (selectedOptionId) {
+    const answerEdge = outgoing.find(
+      (e) => e.source_handle && e.source_handle !== "default" && e.source_handle === selectedOptionId
+    );
+    if (answerEdge) return answerEdge.target_node_id;
+  }
+
+  // 2. Default / fallback edge
+  const defaultEdge = outgoing.find(
+    (e) => !e.source_handle || e.source_handle === "default"
+  );
+  if (defaultEdge) return defaultEdge.target_node_id;
+
+  // 3. Last resort: any outgoing edge
+  return outgoing[0]?.target_node_id || null;
+}
+
+/**
  * Evaluate a decision_node config's rules against fieldValues and tags.
  * Returns the target_node_id of the first matching rule, or config.else_target_node_id.
  */

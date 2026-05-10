@@ -40,8 +40,35 @@ function edgesToFlowEdges(edges) {
     targetHandle: e.target_handle || null,
     type: "decision",
     animated: e.animated ?? true,
-    data: { label: e.label, style_color: e.style_color, ...e },
+    data: {
+      label: e.label,
+      style_color: e.style_color,
+      source_handle: e.source_handle || null,
+      ...e,
+    },
   }));
+}
+
+const ANSWER_NODE_TYPES = new Set(["single_select", "multiple_choice", "checkbox_multi_select", "dropdown"]);
+
+/** Given a connection, look up the answer option label for auto-labeling the edge. */
+function resolveEdgeLabel(connection, flowNodes) {
+  if (!connection.sourceHandle || connection.sourceHandle === "default") return null;
+  const sourceNode = flowNodes.find((n) => n.id === connection.source);
+  if (!sourceNode) return null;
+  const option = (sourceNode.data?.answer_options || []).find((o) => o.option_id === connection.sourceHandle);
+  return option?.label || null;
+}
+
+/** Check if target node is a DQ or qualified outcome for edge coloring. */
+function resolveEdgeTargetMeta(targetNodeId, flowNodes) {
+  const target = flowNodes.find((n) => n.id === targetNodeId);
+  if (!target) return {};
+  const nodeType = target.data?.node_type;
+  const tier = target.data?.config?.qualification_tier;
+  const isDq = tier === "DQ";
+  const isQualified = tier && tier !== "DQ";
+  return { target_is_dq: isDq, target_is_qualified: isQualified };
 }
 
 export default function AdvancedBuilder() {
@@ -143,7 +170,7 @@ export default function AdvancedBuilder() {
           edge_id: edgeId,
           source_node_id: fe.source,
           target_node_id: fe.target,
-          source_handle: fe.sourceHandle || "default",
+          source_handle: fe.sourceHandle || fe.data?.source_handle || "default",
           target_handle: fe.targetHandle || "default",
           label: fe.data?.label || "",
           animated: fe.animated ?? true,
@@ -206,7 +233,21 @@ export default function AdvancedBuilder() {
   const onConnect = useCallback((connection) => {
     pushHistory();
     setFlowEdges((eds) => {
-      const updated = addEdge({ ...connection, id: crypto.randomUUID(), type: "decision", animated: true }, eds);
+      const label = resolveEdgeLabel(connection, flowNodes);
+      const targetMeta = resolveEdgeTargetMeta(connection.target, flowNodes);
+      const newEdge = {
+        ...connection,
+        id: crypto.randomUUID(),
+        type: "decision",
+        animated: true,
+        data: {
+          label: label || null,
+          source_handle: connection.sourceHandle || null,
+          style_color: "#94a3b8",
+          ...targetMeta,
+        },
+      };
+      const updated = addEdge(newEdge, eds);
       scheduleAutoSave(flowNodes, updated);
       return updated;
     });
@@ -490,6 +531,7 @@ export default function AdvancedBuilder() {
             quiz={quiz}
             quizId={quizId}
             allNodes={flowNodes.map((n) => ({ ...n.data, id: n.id }))}
+            allEdges={flowEdges}
             onUpdate={onUpdateNodeData}
             onClose={() => setSelectedNodeId(null)}
           />

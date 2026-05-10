@@ -42,15 +42,36 @@ export function validateTree(quiz, questions, edges) {
     if (!dn.config?.else_target_node_id) errors.push(`Decision node "${dn.label || dn.node_id}" missing an else target.`);
   }
 
-  // 5. Non-terminal nodes need at least one outgoing edge
+  // 5. Non-terminal nodes need at least one outgoing edge.
+  //    Answer-bearing nodes must have EITHER a per-answer edge OR a default edge.
+  const ANSWER_TYPES = new Set(["single_select", "multiple_choice", "checkbox_multi_select", "dropdown"]);
   const terminalTypes = new Set(["results_page"]);
-  const outgoingCount = {};
+
+  // Build outgoing edge map: nodeId -> edges[]
+  const outgoingEdges = {};
   for (const e of edges) {
-    outgoingCount[e.source_node_id] = (outgoingCount[e.source_node_id] || 0) + 1;
+    if (!outgoingEdges[e.source_node_id]) outgoingEdges[e.source_node_id] = [];
+    outgoingEdges[e.source_node_id].push(e);
   }
+
   for (const q of questions) {
-    if (!terminalTypes.has(q.node_type) && !outgoingCount[q.node_id]) {
-      errors.push(`Node "${q.label || q.node_type}" has no outgoing edge.`);
+    if (terminalTypes.has(q.node_type)) continue;
+
+    const nodeEdges = outgoingEdges[q.node_id] || [];
+
+    if (ANSWER_TYPES.has(q.node_type)) {
+      // Must have either a per-answer edge or a default edge
+      const hasDefault = nodeEdges.some((e) => !e.source_handle || e.source_handle === "default");
+      const hasAnyAnswerEdge = nodeEdges.some((e) => e.source_handle && e.source_handle !== "default");
+      if (!hasDefault && !hasAnyAnswerEdge) {
+        errors.push(
+          `Node "${q.label || q.node_type}" has answers but no routing. Connect each answer to its next step, or add a default fallback connection.`
+        );
+      }
+    } else {
+      if (nodeEdges.length === 0) {
+        errors.push(`Node "${q.label || q.node_type}" has no outgoing edge.`);
+      }
     }
   }
 

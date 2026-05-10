@@ -31,7 +31,7 @@ function buildTabs(node) {
   return tabs;
 }
 
-export default function NodeInspectorPanel({ node, quiz, quizId, allNodes, onUpdate, onClose }) {
+export default function NodeInspectorPanel({ node, quiz, quizId, allNodes, allEdges, onUpdate, onClose }) {
   const [activeTab, setActiveTab] = useState("properties");
   const tabs = buildTabs(node);
   const currentTab = tabs.find((t) => t.id === activeTab) ? activeTab : tabs[0]?.id;
@@ -69,7 +69,7 @@ export default function NodeInspectorPanel({ node, quiz, quizId, allNodes, onUpd
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-4">
         {currentTab === "properties" && <PropertiesTab node={node} onUpdate={onUpdate} />}
-        {currentTab === "answers" && <AnswersTab node={node} quiz={quiz} onUpdate={onUpdate} />}
+        {currentTab === "answers" && <AnswersTab node={node} quiz={quiz} allNodes={allNodes} allEdges={allEdges || []} onUpdate={onUpdate} />}
         {currentTab === "custom_fields" && <CustomFieldsTab node={node} quizId={quizId} onUpdate={onUpdate} />}
         {currentTab === "tags" && <TagsTab node={node} onUpdate={onUpdate} />}
         {currentTab === "scripts" && <ScriptsTab node={node} onUpdate={onUpdate} />}

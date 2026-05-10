@@ -1,12 +1,61 @@
 import React, { useState } from "react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
-import { GripVertical, Trash2, Plus } from "lucide-react";
+import { GripVertical, Trash2, Plus, ArrowRight } from "lucide-react";
 
 function toSnakeCase(str) {
   return str.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
 }
 
-function AnswerRow({ option, idx, scoreEnabled, onUpdate, onDelete, draggable }) {
+function RoutingChip({ optionId, nodeId, allEdges, allNodes }) {
+  // Find edge from this node whose source_handle matches this optionId
+  const perAnswerEdge = allEdges.find(
+    (e) => (e.source === nodeId || e.data?.source_node_id === nodeId || e.source_node_id === nodeId)
+      && e.sourceHandle === optionId
+  );
+
+  const defaultEdge = !perAnswerEdge && allEdges.find(
+    (e) => (e.source === nodeId || e.data?.source_node_id === nodeId || e.source_node_id === nodeId)
+      && (!e.sourceHandle || e.sourceHandle === "default")
+  );
+
+  const resolveLabel = (edge) => {
+    if (!edge) return null;
+    const targetId = edge.target || edge.target_node_id || edge.data?.target_node_id;
+    if (!targetId) return null;
+    const targetNode = (allNodes || []).find(
+      (n) => n.id === targetId || n.node_id === targetId
+    );
+    return targetNode?.label || targetNode?.node_type || targetId;
+  };
+
+  if (perAnswerEdge) {
+    const label = resolveLabel(perAnswerEdge);
+    return (
+      <span className="inline-flex items-center gap-1 text-[10px] font-medium bg-blue-50 text-blue-700 border border-blue-200 px-1.5 py-0.5 rounded-full whitespace-nowrap max-w-[140px] truncate">
+        <ArrowRight size={9} className="flex-shrink-0" />
+        {label || "Connected"}
+      </span>
+    );
+  }
+
+  if (defaultEdge) {
+    return (
+      <span className="inline-flex items-center gap-1 text-[10px] text-slate-400 whitespace-nowrap">
+        <ArrowRight size={9} />
+        default
+      </span>
+    );
+  }
+
+  return (
+    <span className="inline-flex items-center gap-1 text-[10px] text-red-500 whitespace-nowrap">
+      <ArrowRight size={9} />
+      not connected
+    </span>
+  );
+}
+
+function AnswerRow({ option, idx, scoreEnabled, nodeId, allEdges, allNodes, onUpdate, onDelete, draggable }) {
   const [local, setLocal] = useState({ ...option });
 
   const commit = (field, val) => {
@@ -62,37 +111,47 @@ function AnswerRow({ option, idx, scoreEnabled, onUpdate, onDelete, draggable })
             </div>
           )}
         </div>
-        <div className="flex items-center gap-4">
-          <label className="flex items-center gap-1.5 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={local.is_dq || false}
-              onChange={(e) => {
-                const updated = { ...option, ...local, is_dq: e.target.checked, dq_type: e.target.checked ? "hard" : null };
-                setLocal(updated);
-                onUpdate(updated);
-              }}
-            />
-            <span className="text-xs font-medium">Disqualify</span>
-          </label>
-          {local.is_dq && (
-            <div className="flex gap-2">
-              {["hard", "soft"].map((dt) => (
-                <label key={dt} className="flex items-center gap-1 cursor-pointer">
-                  <input
-                    type="radio"
-                    checked={local.dq_type === dt}
-                    onChange={() => {
-                      const updated = { ...option, ...local, dq_type: dt };
-                      setLocal(updated);
-                      onUpdate(updated);
-                    }}
-                  />
-                  <span className={`text-xs ${dt === "hard" ? "text-red-600" : "text-amber-600"}`}>{dt} DQ</span>
-                </label>
-              ))}
-            </div>
-          )}
+
+        {/* Routing indicator */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-1.5 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={local.is_dq || false}
+                onChange={(e) => {
+                  const updated = { ...option, ...local, is_dq: e.target.checked, dq_type: e.target.checked ? "hard" : null };
+                  setLocal(updated);
+                  onUpdate(updated);
+                }}
+              />
+              <span className="text-xs font-medium">Disqualify</span>
+            </label>
+            {local.is_dq && (
+              <div className="flex gap-2">
+                {["hard", "soft"].map((dt) => (
+                  <label key={dt} className="flex items-center gap-1 cursor-pointer">
+                    <input
+                      type="radio"
+                      checked={local.dq_type === dt}
+                      onChange={() => {
+                        const updated = { ...option, ...local, dq_type: dt };
+                        setLocal(updated);
+                        onUpdate(updated);
+                      }}
+                    />
+                    <span className={`text-xs ${dt === "hard" ? "text-red-600" : "text-amber-600"}`}>{dt} DQ</span>
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+          <RoutingChip
+            optionId={option.option_id}
+            nodeId={nodeId}
+            allEdges={allEdges}
+            allNodes={allNodes}
+          />
         </div>
       </div>
       <button onClick={() => onDelete(option.option_id)}
@@ -103,9 +162,10 @@ function AnswerRow({ option, idx, scoreEnabled, onUpdate, onDelete, draggable })
   );
 }
 
-export default function AnswersTab({ node, quiz, onUpdate }) {
+export default function AnswersTab({ node, quiz, allNodes, allEdges, onUpdate }) {
   const scoreEnabled = quiz?.settings?.score_enabled;
   const options = node.answer_options || [];
+  const nodeId = node.id || node.node_id;
 
   const handleUpdate = (updated) => {
     onUpdate({ answer_options: options.map((o) => (o.option_id === updated.option_id ? updated : o)) });
@@ -156,6 +216,9 @@ export default function AnswersTab({ node, quiz, onUpdate }) {
                       option={opt}
                       idx={idx}
                       scoreEnabled={scoreEnabled}
+                      nodeId={nodeId}
+                      allEdges={allEdges || []}
+                      allNodes={allNodes || []}
                       onUpdate={handleUpdate}
                       onDelete={handleDelete}
                       draggable={drag}
@@ -173,6 +236,13 @@ export default function AnswersTab({ node, quiz, onUpdate }) {
         className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg border-2 border-dashed border-border text-sm text-muted-foreground hover:border-primary hover:text-primary transition-colors">
         <Plus className="w-4 h-4" /> Add Answer
       </button>
+
+      {options.length > 0 && (
+        <div className="rounded-lg bg-blue-50 border border-blue-100 p-3 text-xs text-blue-700 space-y-1">
+          <p className="font-semibold">Per-answer routing</p>
+          <p>Drag from each answer handle on the canvas to wire it to the next node. Use the default handle at the bottom to route all answers to one place.</p>
+        </div>
+      )}
     </div>
   );
 }

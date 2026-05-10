@@ -49,6 +49,15 @@ function CanvasInner({
     dragTypeRef.current = null;
   }, [screenToFlowPosition, onDropNode]);
 
+  // Build set of source handles that have an edge, per node
+  const connectedHandlesByNode = {};
+  for (const e of edges) {
+    if (e.source && e.sourceHandle) {
+      if (!connectedHandlesByNode[e.source]) connectedHandlesByNode[e.source] = [];
+      connectedHandlesByNode[e.source].push(e.sourceHandle);
+    }
+  }
+
   const nodesWithCallbacks = nodes.map((n) => ({
     ...n,
     data: {
@@ -56,6 +65,7 @@ function CanvasInner({
       onEdit: () => onNodeClick(n),
       onDuplicate: () => onDuplicateNode(n),
       onDelete: () => onDeleteNode(n.id),
+      _connectedHandles: connectedHandlesByNode[n.id] || [],
     },
   }));
 

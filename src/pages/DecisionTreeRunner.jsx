@@ -5,7 +5,7 @@ import RuntimeShell from "@/components/runtime/RuntimeShell";
 import RuntimeProgressBar from "@/components/runtime/RuntimeProgressBar";
 import RuntimeNode from "@/components/runtime/RuntimeNode";
 import { resolveBrand, buildBrandCss } from "@/lib/resolveBrand";
-import { buildGraph, getNextNodeId, evaluateDecisionNode, getProgressRatio } from "@/lib/decisionTreeRuntime";
+import { buildGraph, getNextNodeId, getNextNodeAfterAnswer, evaluateDecisionNode, getProgressRatio } from "@/lib/decisionTreeRuntime";
 import { captureAttribution, getAttribution } from "@/lib/attribution";
 import { executeWebhookNode } from "@/functions/executeWebhookNode";
 import { sendNotificationSms } from "@/functions/sendNotificationSms";
@@ -339,18 +339,21 @@ export default function DecisionTreeRunner({ slug, previewMode, replayMode, repl
     // Merge field values
     const newFV = { ...fieldValues, ...answerValues };
 
-    // Handle DQ
+    // Handle DQ: check per-answer edge first, then fall back to quiz-level redirect
     if (selectedOption?.is_dq) {
+      // Try to route via a per-answer edge first (allows DQ nodes in the graph)
+      const perAnswerNext = getNextNodeAfterAnswer(currentNodeId, selectedOption?.option_id, adjacency);
+      if (perAnswerNext) {
+        advanceToNode(perAnswerNext, newFV, tags, pathTaken);
+        return;
+      }
+
+      // Fall back to quiz-level DQ redirect
       const dqType = selectedOption.dq_type;
       const dqPath = dqType === 'hard'
         ? (quiz?.settings?.dq_redirect_hard || '/Sorry')
         : (quiz?.settings?.dq_redirect_soft || '/Thanks');
 
-      if (dqPath.startsWith('/q/') || dqPath.startsWith('http')) {
-        window.location.href = dqPath;
-        return;
-      }
-      // Find a DQ results node or just redirect
       base44.entities.DecisionTreeRun.update(runId, {
         is_disqualified: true, is_complete: true,
         field_values: newFV, completed_at: new Date().toISOString(),
@@ -359,8 +362,16 @@ export default function DecisionTreeRunner({ slug, previewMode, replayMode, repl
       return;
     }
 
-    // Get next edge
-    const nextId = getNextNodeId(currentNodeId, adjacency);
+    // For multi-select: selectedOption may be an array — route via first matched option_id
+    let optionId = null;
+    if (Array.isArray(selectedOption)) {
+      optionId = selectedOption[0]?.option_id || null;
+    } else {
+      optionId = selectedOption?.option_id || null;
+    }
+
+    // Per-answer edge routing (falls through to default if no per-answer edge)
+    const nextId = getNextNodeAfterAnswer(currentNodeId, optionId, adjacency);
     advanceToNode(nextId, newFV, tags, pathTaken);
   }, [fieldValues, tags, pathTaken, currentNodeId, quiz, runId, advanceToNode]);
 
