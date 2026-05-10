@@ -35,6 +35,7 @@ const Integrations    = lazy(() => import('@/pages/admin/Integrations'));
 const Tracking        = lazy(() => import('@/pages/admin/Tracking'));
 const DecisionTrees   = lazy(() => import('@/pages/admin/DecisionTrees'));
 const DecisionTreeBuilder = lazy(() => import('@/pages/admin/DecisionTreeBuilder'));
+const AdvancedBuilder     = lazy(() => import('@/pages/admin/AdvancedBuilder'));
 const CustomFields    = lazy(() => import('@/pages/admin/CustomFields'));
 const QuizzesRedirect = lazy(() => import('@/pages/admin/QuizzesRedirect'));
 
@@ -133,6 +134,7 @@ const AuthenticatedApp = () => {
           <Route path="quizzes" element={<QuizzesRedirect />} />
           <Route path="decision-trees" element={<DecisionTrees />} />
           <Route path="decision-trees/:quizId/edit" element={<DecisionTreeBuilder />} />
+          <Route path="decision-trees/:quizId/advanced" element={<AdvancedBuilder />} />
           <Route path="custom-fields" element={<CustomFields />} />
           <Route path="chatbot" element={<AdminPlaceholder />} />
           <Route path="integrations" element={<Integrations />} />

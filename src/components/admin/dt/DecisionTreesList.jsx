@@ -1,8 +1,9 @@
 import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { formatDistanceToNow } from "date-fns";
-import { MoreHorizontal, ExternalLink, Copy, Archive, Trash2, Settings, Eye } from "lucide-react";
+import { Wrench, Settings, ExternalLink, Copy, Eye, EyeOff, Archive, Trash2 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const CAMPAIGN_LABELS = {
   mva: "MVA", mass_tort: "Mass Tort", workers_comp: "Workers Comp",
@@ -20,13 +21,40 @@ function pct(num, den) {
   return Math.round((num / den) * 100) + "%";
 }
 
+function StatusPill({ status }) {
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${STATUS_COLORS[status] || STATUS_COLORS.draft}`}>
+      {status || "draft"}
+    </span>
+  );
+}
+
+function IconButton({ icon: Icon, tooltip, onClick, primary, danger }) {
+  return (
+    <TooltipProvider delayDuration={300}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            onClick={(e) => { e.stopPropagation(); onClick(); }}
+            className={`h-7 w-7 flex items-center justify-center rounded-md transition-colors
+              ${primary ? "hover:bg-blue-100 hover:text-blue-600" : danger ? "hover:bg-red-50 hover:text-red-600" : "hover:bg-slate-200 text-slate-500"}`}
+          >
+            <Icon size={14} />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="text-xs">{tooltip}</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
 export default function DecisionTreesList({ onOpenBuilder }) {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterCampaign, setFilterCampaign] = useState("all");
   const [filterBrand, setFilterBrand] = useState("all");
-  const [openMenuId, setOpenMenuId] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [confirmDeleteSlug, setConfirmDeleteSlug] = useState("");
 
@@ -54,18 +82,9 @@ export default function DecisionTreesList({ onOpenBuilder }) {
     mutationFn: async (quiz) => {
       const newSlug = quiz.slug + "-copy-" + Date.now().toString(36);
       const newQuiz = await base44.entities.Quiz.create({
-        ...quiz,
-        id: undefined,
-        title: quiz.title + " (Copy)",
-        slug: newSlug,
-        status: "draft",
-        total_starts: 0,
-        total_completes: 0,
-        total_qualified: 0,
-        total_disqualified: 0,
-        published_at: null,
+        ...quiz, id: undefined, title: quiz.title + " (Copy)", slug: newSlug, status: "draft",
+        total_starts: 0, total_completes: 0, total_qualified: 0, total_disqualified: 0, published_at: null,
       });
-      // Clone questions
       const questions = await base44.entities.Question.filter({ quiz_id: quiz.id });
       for (const q of questions) {
         await base44.entities.Question.create({ ...q, id: undefined, quiz_id: newQuiz.id, node_id: crypto.randomUUID() });
@@ -89,13 +108,9 @@ export default function DecisionTreesList({ onOpenBuilder }) {
     <div className="space-y-4">
       {/* Filters */}
       <div className="flex flex-wrap gap-3">
-        <input
-          type="text"
-          placeholder="Search by title or slug..."
-          value={search}
+        <input type="text" placeholder="Search by title or slug..." value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 min-w-[200px] h-9 px-3 rounded-md border border-input bg-background text-sm"
-        />
+          className="flex-1 min-w-[200px] h-9 px-3 rounded-md border border-input bg-background text-sm" />
         <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}
           className="h-9 px-3 rounded-md border border-input bg-background text-sm">
           <option value="all">All Status</option>
@@ -116,110 +131,67 @@ export default function DecisionTreesList({ onOpenBuilder }) {
       </div>
 
       {/* Table */}
-      <div className="rounded-xl border border-border bg-card overflow-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border bg-muted/40">
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Title</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Campaign</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Brand</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Status</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Ver</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Nodes</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Starts / Completes</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Qual%</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">DQ%</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">CR%</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Last Edited</th>
-              <th className="px-4 py-3"></th>
+      <div className="rounded-xl border border-border bg-card overflow-x-auto">
+        <table className="w-full table-fixed">
+          <thead className="bg-slate-50 border-b">
+            <tr>
+              <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 w-[22%]">Title</th>
+              <th className="text-left px-3 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 w-[12%]">Slug</th>
+              <th className="text-left px-3 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 w-[9%]">Campaign</th>
+              <th className="text-left px-3 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 w-[9%]">Brand</th>
+              <th className="text-left px-3 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 w-[8%]">Status</th>
+              <th className="text-center px-2 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 w-[5%]">Ver</th>
+              <th className="text-center px-2 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 w-[5%]">Nodes</th>
+              <th className="text-center px-2 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 w-[8%]">Subs</th>
+              <th className="text-right px-2 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 w-[6%]">Q%</th>
+              <th className="text-right px-2 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 w-[6%]">CR%</th>
+              <th className="text-right px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 w-[10%]">Actions</th>
             </tr>
           </thead>
           <tbody>
             {isLoading && (
-              <tr><td colSpan={12} className="text-center py-10 text-muted-foreground">Loading...</td></tr>
+              <tr><td colSpan={11} className="text-center py-10 text-muted-foreground">Loading...</td></tr>
             )}
             {!isLoading && filtered.length === 0 && (
-              <tr><td colSpan={12} className="text-center py-10 text-muted-foreground">No decision trees found.</td></tr>
+              <tr><td colSpan={11} className="text-center py-10 text-muted-foreground">No decision trees found.</td></tr>
             )}
             {filtered.map((q) => {
               const brand = brandMap[q.brand_id];
               return (
-                <tr key={q.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
-                  <td className="px-4 py-3">
-                    <button onClick={() => onOpenBuilder(q.id)} className="text-left">
-                      <p className="font-medium text-foreground hover:text-primary transition-colors">{q.title}</p>
-                      <p className="text-xs font-mono text-muted-foreground">{q.slug}</p>
+                <tr key={q.id} className="border-b last:border-0 hover:bg-slate-50 transition group">
+                  <td className="px-4 py-3 truncate">
+                    <button onClick={() => onOpenBuilder(q.id)} className="font-medium text-slate-900 hover:text-blue-600 truncate block text-left w-full">
+                      {q.title}
                     </button>
                   </td>
-                  <td className="px-4 py-3">
-                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-secondary text-secondary-foreground font-medium">
+                  <td className="px-3 py-3 text-xs font-mono text-slate-500 truncate">{q.slug}</td>
+                  <td className="px-3 py-3 truncate">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-slate-100 text-slate-700 uppercase truncate">
                       {CAMPAIGN_LABELS[q.campaign_type] || q.campaign_type}
                     </span>
                   </td>
+                  <td className="px-3 py-3 truncate text-sm text-slate-700">
+                    {brand ? brand.brand_name : <span className="text-slate-400 text-xs">None</span>}
+                  </td>
+                  <td className="px-3 py-3"><StatusPill status={q.status} /></td>
+                  <td className="px-2 py-3 text-center text-sm text-slate-600">v{q.version || 1}</td>
+                  <td className="px-2 py-3 text-center text-sm text-slate-600">{q.total_nodes || 0}</td>
+                  <td className="px-2 py-3 text-center text-sm text-slate-600">{q.total_starts || 0}/{q.total_completes || 0}</td>
+                  <td className="px-2 py-3 text-right text-sm text-slate-600">{pct(q.total_qualified, q.total_completes)}</td>
+                  <td className="px-2 py-3 text-right text-sm text-slate-600">{pct(q.total_completes, q.total_starts)}</td>
                   <td className="px-4 py-3">
-                    {brand ? (
-                      <span className="flex items-center gap-1.5 text-sm">
-                        <span className="w-2 h-2 rounded-full bg-primary flex-shrink-0" />
-                        {brand.brand_name}
-                      </span>
-                    ) : <span className="text-muted-foreground text-xs">None</span>}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${STATUS_COLORS[q.status]}`}>
-                      {q.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">v{q.version || 1}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{q.total_nodes || 0}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{q.total_starts || 0} / {q.total_completes || 0}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{pct(q.total_qualified, q.total_completes)}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{pct(q.total_disqualified, q.total_completes)}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{pct(q.total_completes, q.total_starts)}</td>
-                  <td className="px-4 py-3 text-muted-foreground text-xs">
-                    {q.updated_date ? formatDistanceToNow(new Date(q.updated_date), { addSuffix: true }) : "-"}
-                  </td>
-                  <td className="px-4 py-3 relative">
-                    <button
-                      onClick={() => setOpenMenuId(openMenuId === q.id ? null : q.id)}
-                      className="p-1.5 rounded hover:bg-muted transition-colors"
-                    >
-                      <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
-                    </button>
-                    {openMenuId === q.id && (
-                      <div className="absolute right-4 top-10 z-50 w-48 bg-popover border border-border rounded-lg shadow-lg py-1" onClick={() => setOpenMenuId(null)}>
-                        <button onClick={() => onOpenBuilder(q.id)} className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors">
-                          <Settings className="w-4 h-4" /> Open Builder
-                        </button>
-                        <button onClick={() => window.open(`/q/${q.slug}?preview=1`, "_blank")} className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors">
-                          <ExternalLink className="w-4 h-4" /> View Public Link
-                        </button>
-                        <button
-                          onClick={() => copyMut.mutate(q)}
-                          className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors"
-                        >
-                          <Copy className="w-4 h-4" /> Copy
-                        </button>
-                        <button
-                          onClick={() => updateMut.mutate({ id: q.id, data: { status: q.status === "published" ? "draft" : "published" } })}
-                          className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors"
-                        >
-                          <Eye className="w-4 h-4" /> {q.status === "published" ? "Unpublish" : "Publish"}
-                        </button>
-                        <button
-                          onClick={() => updateMut.mutate({ id: q.id, data: { status: "archived" } })}
-                          className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors"
-                        >
-                          <Archive className="w-4 h-4" /> Archive
-                        </button>
-                        <hr className="my-1 border-border" />
-                        <button
-                          onClick={() => { setConfirmDelete(q); setConfirmDeleteSlug(""); }}
-                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" /> Delete
-                        </button>
-                      </div>
-                    )}
+                    <div className="flex items-center justify-end gap-0.5 opacity-60 group-hover:opacity-100 transition-opacity">
+                      <IconButton icon={Wrench} tooltip="Open Builder" onClick={() => onOpenBuilder(q.id)} primary />
+                      <IconButton icon={ExternalLink} tooltip="View Public Link" onClick={() => window.open(`/q/${q.slug}?preview=1`, "_blank")} />
+                      <IconButton icon={Copy} tooltip="Duplicate" onClick={() => copyMut.mutate(q)} />
+                      <IconButton
+                        icon={q.status === "published" ? EyeOff : Eye}
+                        tooltip={q.status === "published" ? "Unpublish" : "Publish"}
+                        onClick={() => updateMut.mutate({ id: q.id, data: { status: q.status === "published" ? "draft" : "published" } })}
+                      />
+                      <IconButton icon={Archive} tooltip="Archive" onClick={() => updateMut.mutate({ id: q.id, data: { status: "archived" } })} />
+                      <IconButton icon={Trash2} tooltip="Delete" onClick={() => { setConfirmDelete(q); setConfirmDeleteSlug(""); }} danger />
+                    </div>
                   </td>
                 </tr>
               );
@@ -234,19 +206,15 @@ export default function DecisionTreesList({ onOpenBuilder }) {
           <div className="bg-card rounded-xl border border-border p-6 w-full max-w-md space-y-4">
             <h2 className="text-lg font-bold text-foreground">Delete "{confirmDelete.title}"?</h2>
             <p className="text-sm text-muted-foreground">This is permanent. Type the slug <span className="font-mono font-bold">{confirmDelete.slug}</span> to confirm.</p>
-            <input
-              value={confirmDeleteSlug}
+            <input value={confirmDeleteSlug}
               onChange={(e) => setConfirmDeleteSlug(e.target.value)}
               placeholder={confirmDelete.slug}
-              className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm font-mono"
-            />
+              className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm font-mono" />
             <div className="flex gap-3 justify-end">
               <button onClick={() => setConfirmDelete(null)} className="px-4 py-2 rounded-lg border border-border text-sm hover:bg-muted transition-colors">Cancel</button>
-              <button
-                disabled={confirmDeleteSlug !== confirmDelete.slug}
+              <button disabled={confirmDeleteSlug !== confirmDelete.slug}
                 onClick={() => deleteMut.mutate(confirmDelete.id)}
-                className="px-4 py-2 rounded-lg bg-destructive text-destructive-foreground text-sm font-semibold disabled:opacity-40 hover:bg-destructive/90 transition-colors"
-              >
+                className="px-4 py-2 rounded-lg bg-destructive text-destructive-foreground text-sm font-semibold disabled:opacity-40">
                 Delete
               </button>
             </div>

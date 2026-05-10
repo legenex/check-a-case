@@ -12,6 +12,7 @@ import { Loader2 } from "lucide-react";
 export default function DecisionTreeBuilder() {
   const { quizId } = useParams();
   const navigate = useNavigate();
+
   const qc = useQueryClient();
 
   const [selectedNodeId, setSelectedNodeId] = useState(null);
@@ -151,6 +152,7 @@ export default function DecisionTreeBuilder() {
         onSaveNow={handleSaveNow}
         onPreview={() => setShowPreview(true)}
         onBack={() => navigate("/admin/decision-trees")}
+        onSwitchAdvanced={() => navigate(`/admin/decision-trees/${quizId}/advanced`)}
       />
 
       <div className="flex flex-1 overflow-hidden">

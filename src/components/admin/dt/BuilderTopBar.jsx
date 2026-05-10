@@ -8,7 +8,7 @@ const STATUS_COLORS = {
   archived: "bg-gray-100 text-gray-500 border-gray-200",
 };
 
-export default function BuilderTopBar({ quiz, nodes, savedAt, pendingSave, brands, onUpdateQuiz, onSaveNow, onPreview, onBack }) {
+export default function BuilderTopBar({ quiz, nodes, savedAt, pendingSave, brands, onUpdateQuiz, onSaveNow, onPreview, onBack, onSwitchAdvanced }) {
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleVal, setTitleVal] = useState(quiz?.title || "");
   const [showStatusMenu, setShowStatusMenu] = useState(false);
@@ -56,7 +56,13 @@ export default function BuilderTopBar({ quiz, nodes, savedAt, pendingSave, brand
       {/* Mode toggle */}
       <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
         <span className="px-2.5 py-1 text-xs font-semibold bg-card rounded-md shadow-sm">Basic</span>
-        <span className="px-2.5 py-1 text-xs text-muted-foreground cursor-not-allowed" title="Coming in Phase 2">Advanced</span>
+        <button
+          onClick={() => onSwitchAdvanced && onSwitchAdvanced()}
+          className="px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground rounded-md transition-colors"
+          title="Switch to Advanced (Visual Canvas)"
+        >
+          Advanced
+        </button>
       </div>
 
       {/* Preview */}
