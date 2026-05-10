@@ -3,9 +3,9 @@ import { ShieldCheck, ArrowRight } from "lucide-react";
 import { buildQuizUrl } from "@/lib/quizUrl";
 
 const COPY = [
-  { headline: "See If You Qualify in 60 Seconds", body: "Free case review — no obligation, no upfront fees." },
-  { headline: "Free Case Review — No Obligation", body: "Our attorneys only get paid if you win." },
-  { headline: "Don't Wait — Your Claim Window Closes Soon", body: "Every state has a strict deadline. Check yours now." },
+  { headline: "See If You Qualify in 60 Seconds", body: "Free case review, no obligation, no upfront fees." },
+  { headline: "Free Case Review with No Obligation", body: "Find out what your case could be worth." },
+  { headline: "Do Not Wait. Your Window Is Closing", body: "Every day matters in injury claims. Check your deadline now." },
 ];
 
 export default function InlineMiniCta({ position = 0, href, slug = "" }) {

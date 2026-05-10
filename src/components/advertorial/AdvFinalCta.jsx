@@ -31,6 +31,7 @@ export default function AdvFinalCta({ finalCtaUrl, slug }) {
             Estimate My Claim Value
           </a>
         </div>
+        <p className="text-white/30 text-xs">Free Case Review · No Obligation</p>
         <p className="text-white/30 text-xs">© 2026 Check A Case · Verified by NJA-Online LLC</p>
       </div>
     </section>

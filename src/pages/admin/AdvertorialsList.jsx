@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
@@ -6,9 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search, ExternalLink, Pencil, Copy, Archive, Wand2, X } from "lucide-react";
+import { Plus, Search, ExternalLink, Pencil, Copy, Archive, Wand2, X, AlertTriangle, CheckCircle } from "lucide-react";
 import { format } from "date-fns";
 import { bulkSimplifyAdvertorials } from "@/functions/bulkSimplifyAdvertorials";
+
+const BROKEN_MARKERS = ["[INLINE_CTA_", "[CTA_INLINE_", "[MID_SPLIT]"];
+function hasBrokenMarkers(body) {
+  if (!body) return false;
+  return BROKEN_MARKERS.some((m) => body.includes(m));
+}
 
 const STATUS_COLORS = {
   published: "bg-green-100 text-green-700",
@@ -30,6 +36,7 @@ export default function AdvertorialsList({ onEdit, onCreate }) {
   const [lengthFilter, setLengthFilter] = useState("all");
   const [simplifyModal, setSimplifyModal] = useState(false);
   const [simplifyProgress, setSimplifyProgress] = useState(null); // { current, total, done, error }
+  const [rerunBanner, setRerunBanner] = useState(null); // null | { state: 'running'|'done', current, total }
   const qc = useQueryClient();
 
   const { data: advertorials = [], isLoading } = useQuery({
@@ -54,6 +61,28 @@ export default function AdvertorialsList({ onEdit, onCreate }) {
   };
 
   const eligible = advertorials.filter(a => a.status !== "archived" && a.body);
+  const broken = advertorials.filter(a => hasBrokenMarkers(a.body));
+
+  // Auto-detect broken markers on first load and offer rerun
+  useEffect(() => {
+    if (advertorials.length > 0 && broken.length > 0 && rerunBanner === null) {
+      setRerunBanner({ state: "detected", current: 0, total: broken.length });
+    }
+  }, [advertorials.length]);
+
+  const handleRerunBroken = async () => {
+    setRerunBanner({ state: "running", current: 0, total: broken.length });
+    for (let i = 0; i < broken.length; i++) {
+      setRerunBanner({ state: "running", current: i + 1, total: broken.length });
+      try {
+        await bulkSimplifyAdvertorials({ advertorial_id: broken[i].id, broken_only: true });
+      } catch (_err) {
+        // continue on error
+      }
+    }
+    qc.invalidateQueries({ queryKey: ["admin-advertorials"] });
+    setRerunBanner({ state: "done", current: broken.length, total: broken.length });
+  };
 
   const handleBulkSimplify = async () => {
     setSimplifyProgress({ current: 0, total: eligible.length, done: false, error: null });
@@ -86,6 +115,39 @@ export default function AdvertorialsList({ onEdit, onCreate }) {
 
   return (
     <div className="space-y-6">
+
+      {/* Broken markers banner */}
+      {rerunBanner && rerunBanner.state === "detected" && (
+        <div className="flex items-center gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+          <span className="flex-1">Detected {rerunBanner.total} article{rerunBanner.total !== 1 ? "s" : ""} with broken formatting markers. Re-run the rewrite pass to fix them.</span>
+          <Button size="sm" className="rounded-lg gap-1.5 bg-amber-600 hover:bg-amber-700 text-white border-0" onClick={handleRerunBroken}>
+            <Wand2 className="w-3.5 h-3.5" /> Fix Now
+          </Button>
+          <button onClick={() => setRerunBanner(null)} className="text-amber-600 hover:text-amber-900 ml-1"><X className="w-4 h-4" /></button>
+        </div>
+      )}
+
+      {rerunBanner && rerunBanner.state === "running" && (
+        <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800 space-y-2">
+          <div className="flex items-center gap-2">
+            <Wand2 className="w-4 h-4 animate-pulse" />
+            <span>Re-running rewrite pass... {rerunBanner.current} of {rerunBanner.total}</span>
+          </div>
+          <div className="w-full bg-blue-200 rounded-full h-1.5">
+            <div className="bg-blue-600 h-1.5 rounded-full transition-all" style={{ width: `${(rerunBanner.current / rerunBanner.total) * 100}%` }} />
+          </div>
+        </div>
+      )}
+
+      {rerunBanner && rerunBanner.state === "done" && (
+        <div className="flex items-center gap-3 rounded-xl border border-green-300 bg-green-50 px-4 py-3 text-sm text-green-800">
+          <CheckCircle className="w-4 h-4 flex-shrink-0" />
+          <span className="flex-1">Done. {rerunBanner.total} article{rerunBanner.total !== 1 ? "s" : ""} re-formatted.</span>
+          <button onClick={() => setRerunBanner(null)} className="text-green-600 hover:text-green-900"><X className="w-4 h-4" /></button>
+        </div>
+      )}
+
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="text-3xl font-bold text-foreground">Advertorials</h1>
         <div className="flex items-center gap-2">

@@ -10,47 +10,82 @@ import MidSplitBlock from "@/components/advertorial/MidSplitBlock";
 import MinimalLegalFooter from "@/components/public/MinimalLegalFooter";
 import { Clock, User } from "lucide-react";
 
-function BodyWithMidBlock({ body, adv, slug }) {
-  if (!body) return null;
+const mdComponents = {
+  p: ({ children }) => <p className="text-foreground/85 leading-relaxed mb-4">{children}</p>,
+  h2: ({ children }) => <h2 className="text-2xl font-black text-foreground mt-8 mb-3">{children}</h2>,
+  h3: ({ children }) => <h3 className="text-xl font-bold text-foreground mt-6 mb-2">{children}</h3>,
+  strong: ({ children }) => <strong className="font-bold text-foreground">{children}</strong>,
+  a: ({ href, children }) => <a href={href} className="text-primary underline">{children}</a>,
+};
 
-  const insertAfter = adv.mid_image_insert_after_paragraph ?? 4;
-  const hasMidBlock = !!(adv.mid_image_url || adv.mid_image_headline);
+function renderBody(body_markdown, adv, slug) {
+  if (!body_markdown) return null;
 
-  // Split body on the special marker or inject after N paragraphs
-  let before = body;
-  let after = "";
+  const blocks = body_markdown
+    .split(/\n\n+/)
+    .map((b) => b.trim())
+    .filter(Boolean);
 
-  if (body.includes("[MID_IMAGE]")) {
-    const parts = body.split("[MID_IMAGE]");
-    before = parts[0];
-    after = parts.slice(1).join("");
-  } else if (hasMidBlock) {
-    // Split on paragraph breaks
-    const paragraphs = body.split(/\n\n+/);
-    const splitAt = Math.min(insertAfter, paragraphs.length - 1);
-    before = paragraphs.slice(0, splitAt).join("\n\n");
-    after = paragraphs.slice(splitAt).join("\n\n");
+  let inlineCtaIndex = 0;
+  let midImageRendered = false;
+  const elements = [];
+
+  blocks.forEach((block, i) => {
+    const trimmed = block.trim();
+
+    // Match CTA markers
+    if (/^\[(INLINE_CTA|CTA_INLINE)[_\-\s]?\d*\]$/i.test(trimmed)) {
+      elements.push(
+        <InlineMiniCta
+          key={`cta-${i}`}
+          position={inlineCtaIndex}
+          slug={slug}
+          href={adv.mid_cta_url}
+        />
+      );
+      inlineCtaIndex++;
+      return;
+    }
+
+    // Match mid-image markers
+    if (/^\[(MID_IMAGE|MID_SPLIT|MID_PHOTO)\]$/i.test(trimmed)) {
+      midImageRendered = true;
+      elements.push(<MidSplitBlock key={`mid-${i}`} adv={adv} slug={slug} />);
+      return;
+    }
+
+    // Drop unrecognized bracket-only placeholders
+    if (/^\[[A-Z0-9_\-]+\]$/i.test(trimmed) && trimmed.length < 60) {
+      return;
+    }
+
+    elements.push(
+      <ReactMarkdown key={`md-${i}`} components={mdComponents}>
+        {block}
+      </ReactMarkdown>
+    );
+  });
+
+  // Fallback: inject mid-image at positional index if no marker was found
+  if (!midImageRendered && (adv.mid_image_url || adv.mid_image_headline)) {
+    const insertAfter = adv.mid_image_insert_after_paragraph ?? 4;
+    // Find the Nth markdown block (non-CTA, non-mid) and insert after it
+    let mdCount = 0;
+    let insertIdx = elements.length; // default: end
+    for (let j = 0; j < elements.length; j++) {
+      const k = elements[j]?.key || "";
+      if (String(k).startsWith("md-")) {
+        mdCount++;
+        if (mdCount >= insertAfter) {
+          insertIdx = j + 1;
+          break;
+        }
+      }
+    }
+    elements.splice(insertIdx, 0, <MidSplitBlock key="mid-fallback" adv={adv} slug={slug} />);
   }
 
-  return (
-    <>
-      <div className="lg:px-16">
-        <ReactMarkdown className="prose prose-lg max-w-none prose-headings:font-black prose-headings:text-foreground prose-p:text-foreground/85 prose-p:leading-relaxed prose-a:text-primary prose-strong:text-foreground">
-          {before}
-        </ReactMarkdown>
-      </div>
-
-      {hasMidBlock && <MidSplitBlock adv={adv} slug={slug} />}
-
-      {after && (
-        <div className="lg:px-16">
-          <ReactMarkdown className="prose prose-lg max-w-none prose-headings:font-black prose-headings:text-foreground prose-p:text-foreground/85 prose-p:leading-relaxed prose-a:text-primary prose-strong:text-foreground">
-            {after}
-          </ReactMarkdown>
-        </div>
-      )}
-    </>
-  );
+  return elements;
 }
 
 export default function AdvertorialPage() {
@@ -134,14 +169,10 @@ export default function AdvertorialPage() {
             </div>
           )}
 
-          {/* First inline CTA */}
-          <InlineMiniCta position={0} slug={slug} href={adv.mid_cta_url} />
-
-          {/* Body with optional mid-block */}
-          <BodyWithMidBlock body={adv.body} adv={adv} slug={slug} />
-
-          {/* Second inline CTA */}
-          <InlineMiniCta position={1} slug={slug} href={adv.mid_cta_url} />
+          {/* Body: marker-aware renderer */}
+          <div className="lg:px-16 prose prose-lg max-w-none">
+            {renderBody(adv.body, adv, slug)}
+          </div>
 
           {/* Final CTA */}
           <AdvFinalCta finalCtaUrl={adv.final_cta_url} slug={slug} />
