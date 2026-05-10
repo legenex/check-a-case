@@ -7,20 +7,25 @@ const SCRIPT_ID = "tb_tfa_script";
 export default function TaboolaPixel() {
   const location = useLocation();
 
-  // Inject script once
+  // Inject script once — deferred until after page load to avoid blocking render
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (document.getElementById(SCRIPT_ID)) return;
-    window._tfa = window._tfa || [];
-    const script = document.createElement("script");
-    script.async = true;
-    script.id = SCRIPT_ID;
-    script.src = "//cdn.taboola.com/libtrc/unip/" + TABOOLA_ID + "/tfa.js";
-    const first = document.getElementsByTagName("script")[0];
-    if (first && first.parentNode) {
-      first.parentNode.insertBefore(script, first);
-    } else {
+
+    const inject = () => {
+      if (document.getElementById(SCRIPT_ID)) return;
+      window._tfa = window._tfa || [];
+      const script = document.createElement("script");
+      script.async = true;
+      script.id = SCRIPT_ID;
+      script.src = "//cdn.taboola.com/libtrc/unip/" + TABOOLA_ID + "/tfa.js";
       document.head.appendChild(script);
+    };
+
+    if (document.readyState === "complete") {
+      inject();
+    } else {
+      window.addEventListener("load", inject, { once: true });
     }
   }, []);
 

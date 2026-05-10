@@ -268,7 +268,7 @@ export default function AdvertorialPage() {
         {adv.hero_image_url && (
           <div className="max-w-5xl mx-auto px-4 sm:px-6 mb-8">
             <div className="aspect-[16/9] rounded-2xl overflow-hidden shadow-xl shadow-black/10">
-              <img src={adv.hero_image_url} alt={adv.title} className="w-full h-full object-cover" />
+              <img src={adv.hero_image_url} alt={adv.title} className="w-full h-full object-cover" loading="eager" fetchPriority="high" />
             </div>
           </div>
         )}

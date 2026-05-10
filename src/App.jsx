@@ -1,14 +1,16 @@
-import { Toaster } from "@/components/ui/toaster"
+import React, { lazy, Suspense } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
+import { Loader2 } from 'lucide-react';
 
 import TaboolaPixel from '@/components/tracking/TaboolaPixel';
+import AdminAuthGate from '@/components/admin/AdminAuthGate';
 
-// Public pages
+// ── Eagerly loaded public pages (above-the-fold traffic) ──────────────────────
 import Home from '@/pages/Home';
 import Survey from '@/pages/Survey';
 import Submitted from '@/pages/Submitted';
@@ -18,31 +20,38 @@ import PrivacyPolicy from '@/pages/PrivacyPolicy';
 import TermsOfService from '@/pages/TermsOfService';
 import PartnerList from '@/pages/PartnerList';
 import AdvertisingDisclosure from '@/pages/AdvertisingDisclosure';
-
-// Admin layout + pages
-import AdminLayout from '@/components/admin/AdminLayout';
-import Overview from '@/pages/admin/Overview';
-import Leads from '@/pages/admin/Leads';
-import AdminPlaceholder from '@/pages/admin/AdminPlaceholder';
-import Sponsors from '@/pages/admin/Sponsors';
-import Advertorials from '@/pages/admin/Advertorials';
-import ExperimentsAdmin from '@/pages/admin/Experiments';
-import Blog from '@/pages/admin/Blog';
 import AdvertorialPage from '@/pages/AdvertorialPage';
 
-// Tools
-import ClaimEstimator from '@/pages/tools/ClaimEstimator';
-import AdjusterSimulator from '@/pages/tools/AdjusterSimulator';
-import CrashClock from '@/pages/tools/CrashClock';
-import LifestyleCost from '@/pages/tools/LifestyleCost';
-import DemandLetter from '@/pages/tools/DemandLetter';
+// ── Lazily loaded: admin (separate chunk) ─────────────────────────────────────
+const AdminLayout     = lazy(() => import('@/components/admin/AdminLayout'));
+const Overview        = lazy(() => import('@/pages/admin/Overview'));
+const Leads           = lazy(() => import('@/pages/admin/Leads'));
+const AdminPlaceholder = lazy(() => import('@/pages/admin/AdminPlaceholder'));
+const Sponsors        = lazy(() => import('@/pages/admin/Sponsors'));
+const Advertorials    = lazy(() => import('@/pages/admin/Advertorials'));
+const ExperimentsAdmin = lazy(() => import('@/pages/admin/Experiments'));
+const Blog            = lazy(() => import('@/pages/admin/Blog'));
 
-// Landing pages
-import WhatsYourClaimWorth from '@/pages/lp/WhatsYourClaimWorth';
-import BeforeItsTooLate from '@/pages/lp/BeforeItsTooLate';
-import TheLowballTrap from '@/pages/lp/TheLowballTrap';
-import FreeDemandLetter from '@/pages/lp/FreeDemandLetter';
-import TheRealCostOfYourInjury from '@/pages/lp/TheRealCostOfYourInjury';
+// ── Lazily loaded: tools ──────────────────────────────────────────────────────
+const ClaimEstimator    = lazy(() => import('@/pages/tools/ClaimEstimator'));
+const AdjusterSimulator = lazy(() => import('@/pages/tools/AdjusterSimulator'));
+const CrashClock        = lazy(() => import('@/pages/tools/CrashClock'));
+const LifestyleCost     = lazy(() => import('@/pages/tools/LifestyleCost'));
+const DemandLetter      = lazy(() => import('@/pages/tools/DemandLetter'));
+
+// ── Lazily loaded: landing pages ──────────────────────────────────────────────
+const WhatsYourClaimWorth    = lazy(() => import('@/pages/lp/WhatsYourClaimWorth'));
+const BeforeItsTooLate       = lazy(() => import('@/pages/lp/BeforeItsTooLate'));
+const TheLowballTrap         = lazy(() => import('@/pages/lp/TheLowballTrap'));
+const FreeDemandLetter       = lazy(() => import('@/pages/lp/FreeDemandLetter'));
+const TheRealCostOfYourInjury = lazy(() => import('@/pages/lp/TheRealCostOfYourInjury'));
+
+// Shared suspense fallback
+const Spinner = () => (
+  <div className="min-h-screen flex items-center justify-center">
+    <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+  </div>
+);
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -65,57 +74,66 @@ const AuthenticatedApp = () => {
   }
 
   return (
-    <Routes>
-      {/* Public routes */}
-      <Route path="/" element={<Home />} />
-      <Route path="/Survey" element={<Survey />} />
-      <Route path="/Submitted" element={<Submitted />} />
-      <Route path="/Thanks" element={<Thanks />} />
-      <Route path="/Sorry" element={<Sorry />} />
-      <Route path="/PrivacyPolicy" element={<PrivacyPolicy />} />
-      <Route path="/TermsOfService" element={<TermsOfService />} />
-      <Route path="/PartnerList" element={<PartnerList />} />
-      <Route path="/AdvertisingDisclosure" element={<AdvertisingDisclosure />} />
-      <Route path="/a/:slug" element={<AdvertorialPage />} />
+    <Suspense fallback={<Spinner />}>
+      <Routes>
+        {/* Public routes — eagerly loaded */}
+        <Route path="/" element={<Home />} />
+        <Route path="/Survey" element={<Survey />} />
+        <Route path="/Submitted" element={<Submitted />} />
+        <Route path="/Thanks" element={<Thanks />} />
+        <Route path="/Sorry" element={<Sorry />} />
+        <Route path="/PrivacyPolicy" element={<PrivacyPolicy />} />
+        <Route path="/TermsOfService" element={<TermsOfService />} />
+        <Route path="/PartnerList" element={<PartnerList />} />
+        <Route path="/AdvertisingDisclosure" element={<AdvertisingDisclosure />} />
+        <Route path="/a/:slug" element={<AdvertorialPage />} />
 
-      {/* Tool routes */}
-      <Route path="/tools/claim-estimator" element={<ClaimEstimator />} />
-      <Route path="/tools/adjuster-simulator" element={<AdjusterSimulator />} />
-      <Route path="/tools/crash-clock" element={<CrashClock />} />
-      <Route path="/tools/lifestyle-cost" element={<LifestyleCost />} />
-      <Route path="/tools/demand-letter" element={<DemandLetter />} />
+        {/* Tool routes — lazy */}
+        <Route path="/tools/claim-estimator" element={<ClaimEstimator />} />
+        <Route path="/tools/adjuster-simulator" element={<AdjusterSimulator />} />
+        <Route path="/tools/crash-clock" element={<CrashClock />} />
+        <Route path="/tools/lifestyle-cost" element={<LifestyleCost />} />
+        <Route path="/tools/demand-letter" element={<DemandLetter />} />
 
-      {/* Landing pages */}
-      <Route path="/lp/whats-your-claim-worth" element={<WhatsYourClaimWorth />} />
-      <Route path="/lp/before-its-too-late" element={<BeforeItsTooLate />} />
-      <Route path="/lp/the-lowball-trap" element={<TheLowballTrap />} />
-      <Route path="/lp/free-demand-letter" element={<FreeDemandLetter />} />
-      <Route path="/lp/the-real-cost-of-your-injury" element={<TheRealCostOfYourInjury />} />
+        {/* Landing pages — lazy */}
+        <Route path="/lp/whats-your-claim-worth" element={<WhatsYourClaimWorth />} />
+        <Route path="/lp/before-its-too-late" element={<BeforeItsTooLate />} />
+        <Route path="/lp/the-lowball-trap" element={<TheLowballTrap />} />
+        <Route path="/lp/free-demand-letter" element={<FreeDemandLetter />} />
+        <Route path="/lp/the-real-cost-of-your-injury" element={<TheRealCostOfYourInjury />} />
 
-      {/* Admin routes */}
-      <Route path="/admin" element={<AdminLayout />}>
-        <Route index element={<Overview />} />
-        <Route path="leads" element={<Leads />} />
-        <Route path="analytics" element={<AdminPlaceholder />} />
-        <Route path="numbers" element={<AdminPlaceholder />} />
-        <Route path="quizzes" element={<AdminPlaceholder />} />
-        <Route path="landing-pages" element={<AdminPlaceholder />} />
-        <Route path="pages" element={<AdminPlaceholder />} />
-        <Route path="sponsors" element={<Sponsors />} />
-        <Route path="services" element={<AdminPlaceholder />} />
-        <Route path="blog" element={<Blog />} />
-        <Route path="seo" element={<AdminPlaceholder />} />
-        <Route path="advertorials" element={<Advertorials />} />
-        <Route path="experiments" element={<ExperimentsAdmin />} />
-        <Route path="chatbot" element={<AdminPlaceholder />} />
-        <Route path="integrations" element={<AdminPlaceholder />} />
-        <Route path="tracking" element={<AdminPlaceholder />} />
-        <Route path="users" element={<AdminPlaceholder />} />
-        <Route path="settings" element={<AdminPlaceholder />} />
-      </Route>
+        {/* Admin routes — lazy + gated ONCE here */}
+        <Route
+          path="/admin"
+          element={
+            <AdminAuthGate>
+              <AdminLayout />
+            </AdminAuthGate>
+          }
+        >
+          <Route index element={<Overview />} />
+          <Route path="leads" element={<Leads />} />
+          <Route path="analytics" element={<AdminPlaceholder />} />
+          <Route path="numbers" element={<AdminPlaceholder />} />
+          <Route path="quizzes" element={<AdminPlaceholder />} />
+          <Route path="landing-pages" element={<AdminPlaceholder />} />
+          <Route path="pages" element={<AdminPlaceholder />} />
+          <Route path="sponsors" element={<Sponsors />} />
+          <Route path="services" element={<AdminPlaceholder />} />
+          <Route path="blog" element={<Blog />} />
+          <Route path="seo" element={<AdminPlaceholder />} />
+          <Route path="advertorials" element={<Advertorials />} />
+          <Route path="experiments" element={<ExperimentsAdmin />} />
+          <Route path="chatbot" element={<AdminPlaceholder />} />
+          <Route path="integrations" element={<AdminPlaceholder />} />
+          <Route path="tracking" element={<AdminPlaceholder />} />
+          <Route path="users" element={<AdminPlaceholder />} />
+          <Route path="settings" element={<AdminPlaceholder />} />
+        </Route>
 
-      <Route path="*" element={<PageNotFound />} />
-    </Routes>
+        <Route path="*" element={<PageNotFound />} />
+      </Routes>
+    </Suspense>
   );
 };
 
@@ -133,7 +151,6 @@ function App() {
           <PublicPixels />
           <AuthenticatedApp />
         </Router>
-        <Toaster />
       </QueryClientProvider>
     </AuthProvider>
   )

@@ -17,7 +17,7 @@ export default function MidSplitBlock({ adv, slug }) {
       <div className="flex flex-col sm:flex-row">
         {/* Image col */}
         <div className="sm:w-2/5 relative aspect-video sm:aspect-auto min-h-[220px]">
-          <img src={image} alt="" className="absolute inset-0 w-full h-full object-cover" />
+          <img src={image} alt="" className="absolute inset-0 w-full h-full object-cover" loading="lazy" decoding="async" />
           <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(30,64,175,0.6) 0%, transparent 60%)" }} />
         </div>
         {/* Text col */}

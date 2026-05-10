@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { Outlet } from "react-router-dom";
 import AdminSidebar from "./AdminSidebar";
-import AdminAuthGate from "./AdminAuthGate";
 import { Menu } from "lucide-react";
 
 export default function AdminLayout() {
@@ -9,7 +8,6 @@ export default function AdminLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <AdminAuthGate>
     <div className="min-h-screen bg-background">
       {/* Mobile overlay */}
       {mobileOpen && (
@@ -54,6 +52,5 @@ export default function AdminLayout() {
         </main>
       </div>
     </div>
-    </AdminAuthGate>
   );
 }

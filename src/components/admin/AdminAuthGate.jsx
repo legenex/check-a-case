@@ -1,23 +1,34 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Loader2 } from "lucide-react";
+
+const ALLOWED_ROLES = new Set(["admin", "Admin", "editor", "Editor", "analyst", "Analyst"]);
 
 export default function AdminAuthGate({ children }) {
   const [status, setStatus] = useState("checking");
   const [user, setUser] = useState(null);
+  const ranRef = useRef(false);
 
   useEffect(() => {
+    // Guard against React StrictMode double-invoke
+    if (ranRef.current) return;
+    ranRef.current = true;
+
     let alive = true;
+
     (async () => {
       try {
         const me = await base44.auth.me();
         if (!alive) return;
-        if (!me) {
+
+        if (!me || !me.email) {
           setStatus("unauthenticated");
           return;
         }
-        const role = me?.role;
-        if (role === "admin" || role === "editor" || role === "analyst") {
+
+        const role = me.role;
+
+        if (role && ALLOWED_ROLES.has(role)) {
           setUser(me);
           setStatus("authorized");
         } else {
@@ -28,8 +39,9 @@ export default function AdminAuthGate({ children }) {
         if (alive) setStatus("unauthenticated");
       }
     })();
+
     return () => { alive = false; };
-  }, []);
+  }, []); // empty deps — run ONCE
 
   if (status === "checking") {
     return (
@@ -47,6 +59,7 @@ export default function AdminAuthGate({ children }) {
             src="https://checkacase.com/wp-content/uploads/2023/05/CAC-Logo-Blue.png"
             alt="Check A Case"
             className="h-12 mx-auto mb-6"
+            loading="lazy"
           />
           <h1 className="text-2xl font-bold text-slate-900 mb-2">Admin sign in required</h1>
           <p className="text-slate-600 mb-6 text-sm">
@@ -72,7 +85,7 @@ export default function AdminAuthGate({ children }) {
         <div className="max-w-md w-full bg-white border border-slate-200 rounded-2xl p-8 shadow-sm text-center">
           <h1 className="text-2xl font-bold text-slate-900 mb-2">Access denied</h1>
           <p className="text-slate-600 mb-6 text-sm">
-            Your account ({user?.email}) doesn't have permission to access the admin panel.
+            Your account ({user?.email || "this account"}) doesn't have permission to access the admin panel.
           </p>
           <button
             onClick={() => base44.auth.logout("/")}
