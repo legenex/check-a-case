@@ -131,6 +131,49 @@
     },
     "version_at_run": {
       "type": "number"
+    },
+    "errors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "node_id": {
+            "type": "string"
+          },
+          "error_message": {
+            "type": "string"
+          },
+          "occurred_at": {
+            "type": "string"
+          },
+          "stack": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "notifications_log": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "channel": {
+            "type": "string"
+          },
+          "recipient": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "error_message": {
+            "type": "string"
+          },
+          "sent_at": {
+            "type": "string"
+          }
+        }
+      }
     }
   },
   "required": [

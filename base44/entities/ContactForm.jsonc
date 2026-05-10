@@ -69,6 +69,17 @@
     "tcpa_text": {
       "type": "string"
     },
+    "tcpa_display_mode": {
+      "type": "string",
+      "enum": [
+        "implicit",
+        "explicit_checkbox"
+      ],
+      "default": "implicit"
+    },
+    "tcpa_link_overrides": {
+      "type": "object"
+    },
     "trustedform_enabled": {
       "type": "boolean",
       "default": true
@@ -78,6 +89,16 @@
       "default": "xxTrustedFormCertUrl"
     },
     "submit_webhook_url": {
+      "type": "string"
+    },
+    "webhook_method": {
+      "type": "string",
+      "default": "POST"
+    },
+    "webhook_headers": {
+      "type": "object"
+    },
+    "webhook_body_template": {
       "type": "string"
     },
     "scripts": {

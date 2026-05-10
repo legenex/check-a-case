@@ -48,6 +48,9 @@
       ],
       "default": "qualified"
     },
+    "qualification_tier": {
+      "type": "string"
+    },
     "status": {
       "type": "string",
       "enum": [
@@ -63,6 +66,19 @@
     "quiz_id": {
       "type": "string"
     },
+    "run_id": {
+      "type": "string"
+    },
+    "session_id": {
+      "type": "string"
+    },
+    "brand_id": {
+      "type": "string"
+    },
+    "field_values": {
+      "type": "object",
+      "description": "Full field_values from the run"
+    },
     "quiz_answers": {
       "type": "object",
       "description": "Full quiz answers JSON"
@@ -75,6 +91,15 @@
       "type": "string"
     },
     "campaign": {
+      "type": "string"
+    },
+    "utm_source": {
+      "type": "string"
+    },
+    "utm_medium": {
+      "type": "string"
+    },
+    "utm_campaign": {
       "type": "string"
     },
     "trusted_form_cert_url": {

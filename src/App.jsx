@@ -38,6 +38,10 @@ const DecisionTreeBuilder = lazy(() => import('@/pages/admin/DecisionTreeBuilder
 const AdvancedBuilder     = lazy(() => import('@/pages/admin/AdvancedBuilder'));
 const CustomFields    = lazy(() => import('@/pages/admin/CustomFields'));
 const QuizzesRedirect = lazy(() => import('@/pages/admin/QuizzesRedirect'));
+const ContactFormsAdmin = lazy(() => import('@/pages/admin/ContactForms'));
+
+// ── Lazily loaded: public quiz runtime ────────────────────────────────────────
+const QuizRunner = lazy(() => import('@/pages/QuizRunner'));
 
 // ── Lazily loaded: tools ──────────────────────────────────────────────────────
 const ClaimEstimator    = lazy(() => import('@/pages/tools/ClaimEstimator'));
@@ -94,6 +98,7 @@ const AuthenticatedApp = () => {
         <Route path="/PartnerList" element={<PartnerList />} />
         <Route path="/AdvertisingDisclosure" element={<AdvertisingDisclosure />} />
         <Route path="/a/:slug" element={<AdvertorialPage />} />
+        <Route path="/q/:slug" element={<QuizRunner />} />
 
         {/* Tool routes — lazy */}
         <Route path="/tools/claim-estimator" element={<ClaimEstimator />} />
@@ -132,6 +137,7 @@ const AuthenticatedApp = () => {
           <Route path="advertorials" element={<Advertorials />} />
           <Route path="experiments" element={<ExperimentsAdmin />} />
           <Route path="quizzes" element={<QuizzesRedirect />} />
+          <Route path="contact-forms" element={<ContactFormsAdmin />} />
           <Route path="decision-trees" element={<DecisionTrees />} />
           <Route path="decision-trees/:quizId/edit" element={<DecisionTreeBuilder />} />
           <Route path="decision-trees/:quizId/advanced" element={<AdvancedBuilder />} />

@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, BarChart3, Users2, Phone, GitBranch,
   Layers, FileText, Briefcase, BookOpen, Search, Newspaper,
-  FlaskConical, Bot, Plug, Activity, UserCog, Settings, Database
+  FlaskConical, Bot, Plug, Activity, UserCog, Settings, Database, ClipboardList
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -13,6 +13,7 @@ const NAV_ITEMS = [
   { label: "Leads", path: "/admin/leads", icon: Users2 },
   { label: "Numbers", path: "/admin/numbers", icon: Phone },
   { label: "Decision Trees", path: "/admin/decision-trees", icon: GitBranch },
+  { label: "Contact Forms", path: "/admin/contact-forms", icon: ClipboardList },
   { label: "Custom Fields", path: "/admin/custom-fields", icon: Database },
   { label: "Landing Pages", path: "/admin/landing-pages", icon: Layers },
   { label: "Pages", path: "/admin/pages", icon: FileText },

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { X } from "lucide-react";
+import AIWizard from "./AIWizard";
 
 const TABS = ["Start from Blank", "Start from Template", "Generate with AI"];
 
@@ -76,7 +77,7 @@ export default function DecisionTreeNewModal({ onClose, onCreated }) {
               className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 ${tab === i ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
             >
               {t}
-              {i === 2 && <span className="ml-1.5 text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-semibold">Phase 3</span>}
+              {i === 2 && <span className="ml-1.5 text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-semibold">AI</span>}
             </button>
           ))}
         </div>
@@ -149,11 +150,7 @@ export default function DecisionTreeNewModal({ onClose, onCreated }) {
         )}
 
         {tab === 2 && (
-          <div className="py-8 text-center text-muted-foreground">
-            <p className="text-4xl mb-4">🤖</p>
-            <p className="font-medium">AI Generation coming in Phase 3</p>
-            <p className="text-sm mt-1">Describe your qualification flow and let AI build it for you.</p>
-          </div>
+          <AIWizard onCreated={(quizId) => { onCreated(quizId); }} />
         )}
       </div>
     </div>
