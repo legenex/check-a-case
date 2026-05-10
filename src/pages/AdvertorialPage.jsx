@@ -46,7 +46,8 @@ function appendUtmToUrl(url, attribution) {
 
 // ---------- Drop-cap style injected once ----------
 const DROP_CAP_STYLE = `
-  .adv-body > p:first-of-type::first-letter {
+  .adv-body > p:first-of-type::first-letter,
+  .adv-segment:first-child p:first-of-type::first-letter {
     float: left;
     font-size: 4em;
     line-height: 0.8;
@@ -57,53 +58,83 @@ const DROP_CAP_STYLE = `
   }
 `;
 
-// ---------- Markdown components ----------
-function makeMdComponents(inlineCtas, midSplitInserted, adv, slug, ctaHref) {
-  let pCount = 0;
-  let ctaInserted = 0;
-  let h2Count = 0;
+// ---------- Markdown components (stateless) ----------
+const MD_COMPONENTS = {
+  h1: ({ children }) => <h1 className="text-3xl font-black tracking-tight text-foreground mt-10 mb-4">{children}</h1>,
+  h2: ({ children }) => (
+    <div className="mt-10 mb-4">
+      <h2 className="text-2xl font-bold text-foreground pb-1 inline-block border-b-2 border-primary">{children}</h2>
+    </div>
+  ),
+  h3: ({ children }) => <h3 className="text-xl font-semibold text-foreground mt-7 mb-2">{children}</h3>,
+  p: ({ children }) => <p className="text-[1.0625rem] leading-[1.8] text-foreground/85 mb-5">{children}</p>,
+  blockquote: ({ children }) => (
+    <blockquote className="my-6 pl-5 border-l-4 border-primary bg-primary/5 py-4 pr-4 rounded-r-xl italic text-foreground/75 text-base leading-relaxed">
+      {children}
+    </blockquote>
+  ),
+  strong: ({ children }) => <strong className="font-bold text-foreground">{children}</strong>,
+  em: ({ children }) => <em className="italic">{children}</em>,
+  ul: ({ children }) => <ul className="list-disc pl-6 mb-5 space-y-2 text-foreground/85">{children}</ul>,
+  ol: ({ children }) => <ol className="list-decimal pl-6 mb-5 space-y-2 text-foreground/85">{children}</ol>,
+  li: ({ children }) => <li className="text-[1.0625rem] leading-[1.75]">{children}</li>,
+  a: ({ href, children }) => <a href={href} className="text-primary underline underline-offset-2 hover:text-primary/80">{children}</a>,
+  hr: () => <hr className="my-8 border-border" />,
+};
 
-  return {
-    h1: ({ children }) => <h1 className="text-3xl font-black tracking-tight text-foreground mt-10 mb-4">{children}</h1>,
-    h2: ({ children }) => {
-      h2Count++;
-      return (
-        <div className="mt-10 mb-4">
-          <h2 className="text-2xl font-bold text-foreground pb-1 inline-block border-b-2 border-primary">{children}</h2>
-        </div>
-      );
-    },
-    h3: ({ children }) => <h3 className="text-xl font-semibold text-foreground mt-7 mb-2">{children}</h3>,
-    p: ({ children }) => {
-      pCount++;
-      const nodes = [];
-      nodes.push(<p key="p" className="text-[1.0625rem] leading-[1.8] text-foreground/85 mb-5">{children}</p>);
-      // Insert inline mini CTA every ~4 paragraphs, max 3 times
-      if (pCount % 4 === 0 && ctaInserted < 3) {
-        nodes.push(
-          <InlineMiniCta key={`cta-${ctaInserted}`} position={ctaInserted} href={ctaHref} />
-        );
-        ctaInserted++;
-        // After 2nd inline CTA, insert the mid split block
-        if (ctaInserted === 2) {
-          nodes.push(<MidSplitBlock key="mid-split" adv={adv} slug={slug} />);
+// ---------- Marker-based body renderer ----------
+// Splits body on [INLINE_CTA_0], [INLINE_CTA_1], [MID_SPLIT] markers
+// Falls back to rendering whole body if no markers present
+function AdvBody({ body, adv, slug, ctaHref }) {
+  const MARKER_RE = /\[(INLINE_CTA_0|INLINE_CTA_1|MID_SPLIT)\]/g;
+  const parts = [];
+  let last = 0;
+  let match;
+  const hasMarkers = MARKER_RE.test(body);
+
+  if (!hasMarkers) {
+    // Legacy: render as one block
+    return (
+      <div className="adv-body adv-segment" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
+        <ReactMarkdown components={MD_COMPONENTS}>{body}</ReactMarkdown>
+      </div>
+    );
+  }
+
+  // Reset and re-run
+  MARKER_RE.lastIndex = 0;
+  while ((match = MARKER_RE.exec(body)) !== null) {
+    const segment = body.slice(last, match.index).trim();
+    if (segment) parts.push({ type: "md", content: segment });
+    parts.push({ type: "marker", marker: match[1] });
+    last = match.index + match[0].length;
+  }
+  const tail = body.slice(last).trim();
+  if (tail) parts.push({ type: "md", content: tail });
+
+  return (
+    <div className="adv-body" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
+      {parts.map((part, i) => {
+        if (part.type === "md") {
+          return (
+            <div key={i} className={i === 0 ? "adv-segment" : ""}>
+              <ReactMarkdown components={MD_COMPONENTS}>{part.content}</ReactMarkdown>
+            </div>
+          );
         }
-      }
-      return <>{nodes}</>;
-    },
-    blockquote: ({ children }) => (
-      <blockquote className="my-6 pl-5 border-l-4 border-primary bg-primary/5 py-4 pr-4 rounded-r-xl italic text-foreground/75 text-base leading-relaxed">
-        {children}
-      </blockquote>
-    ),
-    strong: ({ children }) => <strong className="font-bold text-foreground">{children}</strong>,
-    em: ({ children }) => <em className="italic">{children}</em>,
-    ul: ({ children }) => <ul className="list-disc pl-6 mb-5 space-y-2 text-foreground/85">{children}</ul>,
-    ol: ({ children }) => <ol className="list-decimal pl-6 mb-5 space-y-2 text-foreground/85">{children}</ol>,
-    li: ({ children }) => <li className="text-[1.0625rem] leading-[1.75]">{children}</li>,
-    a: ({ href, children }) => <a href={href} className="text-primary underline underline-offset-2 hover:text-primary/80">{children}</a>,
-    hr: () => <hr className="my-8 border-border" />,
-  };
+        if (part.marker === "INLINE_CTA_0") {
+          return <InlineMiniCta key={i} position={0} href={ctaHref} slug={slug} />;
+        }
+        if (part.marker === "INLINE_CTA_1") {
+          return <InlineMiniCta key={i} position={1} href={ctaHref} slug={slug} />;
+        }
+        if (part.marker === "MID_SPLIT") {
+          return <MidSplitBlock key={i} adv={adv} slug={slug} />;
+        }
+        return null;
+      })}
+    </div>
+  );
 }
 
 // ---------- Main Page ----------
@@ -174,8 +205,6 @@ export default function AdvertorialPage() {
     ? new Date(adv.updated_date).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
     : "2026";
 
-  const mdComponents = makeMdComponents([], false, adv, adv.slug, ctaHref);
-
   return (
     <div className="min-h-screen bg-[#fafafa]">
       <style>{DROP_CAP_STYLE}</style>
@@ -197,7 +226,7 @@ export default function AdvertorialPage() {
 
         {/* Eyebrow */}
         <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-4">
-          <span className="text-primary">Health &amp; Legal</span>
+          <span className="text-primary">{adv.campaign_id || "Legal Alert"}</span>
           <span>·</span>
           <Clock className="w-3 h-3" />
           <span>{readTime} min read</span>
@@ -243,9 +272,7 @@ export default function AdvertorialPage() {
         </div>
 
         {/* Body */}
-        <div className="adv-body" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
-          <ReactMarkdown components={mdComponents}>{adv.body || ""}</ReactMarkdown>
-        </div>
+        <AdvBody body={adv.body || ""} adv={adv} slug={adv.slug} ctaHref={ctaHref} />
 
         {/* Final CTA block */}
         <AdvFinalCta finalCtaUrl={ctaHref} slug={adv.slug} />
