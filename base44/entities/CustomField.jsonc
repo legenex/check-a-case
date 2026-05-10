@@ -1,0 +1,76 @@
+{
+  "name": "CustomField",
+  "type": "object",
+  "properties": {
+    "field_key": {
+      "type": "string"
+    },
+    "display_label": {
+      "type": "string"
+    },
+    "field_type": {
+      "type": "string",
+      "enum": [
+        "string",
+        "text",
+        "number",
+        "boolean",
+        "enum",
+        "email",
+        "phone",
+        "date",
+        "datetime",
+        "url",
+        "json",
+        "array_string"
+      ]
+    },
+    "category": {
+      "type": "string"
+    },
+    "allowed_values": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "default_value": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "is_pii": {
+      "type": "boolean",
+      "default": false
+    },
+    "is_required_in_lead": {
+      "type": "boolean",
+      "default": false
+    },
+    "is_system": {
+      "type": "boolean",
+      "default": false
+    },
+    "is_used_count": {
+      "type": "number",
+      "default": 0
+    },
+    "scope": {
+      "type": "string",
+      "enum": [
+        "global",
+        "quiz"
+      ],
+      "default": "global"
+    },
+    "quiz_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "field_key",
+    "display_label",
+    "field_type"
+  ]
+}

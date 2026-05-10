@@ -1,0 +1,242 @@
+{
+  "name": "Question",
+  "type": "object",
+  "properties": {
+    "node_id": {
+      "type": "string"
+    },
+    "quiz_id": {
+      "type": "string"
+    },
+    "node_type": {
+      "type": "string",
+      "enum": [
+        "start_page",
+        "custom_page",
+        "multiple_choice",
+        "single_select",
+        "checkbox_multi_select",
+        "dropdown",
+        "text_field",
+        "text_block",
+        "information",
+        "slider",
+        "address",
+        "date_picker",
+        "datetime_picker",
+        "decision_node",
+        "form",
+        "transition",
+        "notification_sms",
+        "notification_email",
+        "notification_whatsapp",
+        "notification_messenger",
+        "notification_telegram",
+        "phone_verification",
+        "webhook_api",
+        "results_page"
+      ]
+    },
+    "position_x": {
+      "type": "number",
+      "default": 0
+    },
+    "position_y": {
+      "type": "number",
+      "default": 0
+    },
+    "order_index": {
+      "type": "number",
+      "default": 0
+    },
+    "section_id": {
+      "type": "string"
+    },
+    "label": {
+      "type": "string"
+    },
+    "title_display": {
+      "type": "string"
+    },
+    "help_text": {
+      "type": "string"
+    },
+    "placeholder": {
+      "type": "string"
+    },
+    "required": {
+      "type": "boolean",
+      "default": true
+    },
+    "answer_options": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "option_id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          },
+          "score": {
+            "type": "number",
+            "default": 0
+          },
+          "image_url": {
+            "type": "string"
+          },
+          "tags_to_add": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "tags_to_remove": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "custom_field_overrides": {
+            "type": "object"
+          },
+          "next_node_id": {
+            "type": "string"
+          },
+          "is_dq": {
+            "type": "boolean",
+            "default": false
+          },
+          "dq_type": {
+            "type": "string",
+            "enum": [
+              "hard",
+              "soft"
+            ]
+          }
+        }
+      }
+    },
+    "validation_rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "rule_type": {
+            "type": "string",
+            "enum": [
+              "regex",
+              "min_length",
+              "max_length",
+              "allowed_values",
+              "blocklist",
+              "valid_email",
+              "valid_phone",
+              "valid_zip",
+              "spam_filter"
+            ]
+          },
+          "params": {
+            "type": "object"
+          },
+          "error_message": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "custom_field_assignments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "custom_field_id": {
+            "type": "string"
+          },
+          "value_source": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          },
+          "transform": {
+            "type": "string",
+            "enum": [
+              "none",
+              "lowercase",
+              "uppercase",
+              "trim",
+              "phone_format",
+              "state_2letter",
+              "date_iso"
+            ]
+          }
+        }
+      }
+    },
+    "tags_to_add": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "tags_to_remove": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "scripts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "trigger": {
+            "type": "string",
+            "enum": [
+              "on_enter",
+              "on_exit"
+            ]
+          },
+          "language": {
+            "type": "string",
+            "default": "javascript"
+          },
+          "code": {
+            "type": "string"
+          },
+          "is_enabled": {
+            "type": "boolean",
+            "default": true
+          }
+        }
+      }
+    },
+    "config": {
+      "type": "object"
+    },
+    "media_image_url": {
+      "type": "string"
+    },
+    "media_video_embed": {
+      "type": "string"
+    },
+    "form_html": {
+      "type": "string"
+    },
+    "contact_form_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "quiz_id",
+    "node_type"
+  ]
+}

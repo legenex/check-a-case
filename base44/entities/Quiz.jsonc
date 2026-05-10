@@ -11,6 +11,29 @@
     "description": {
       "type": "string"
     },
+    "builder_mode": {
+      "type": "string",
+      "enum": [
+        "basic",
+        "advanced"
+      ],
+      "default": "basic"
+    },
+    "campaign_type": {
+      "type": "string",
+      "enum": [
+        "mva",
+        "mass_tort",
+        "workers_comp",
+        "slip_and_fall",
+        "med_mal",
+        "custom"
+      ],
+      "default": "mva"
+    },
+    "brand_id": {
+      "type": "string"
+    },
     "status": {
       "type": "string",
       "enum": [
@@ -108,7 +131,185 @@
         "success_redirect": {
           "type": "string",
           "default": "/Submitted"
+        },
+        "redirect_url": {
+          "type": "string"
+        },
+        "thank_you_message": {
+          "type": "string"
+        },
+        "progress_bar": {
+          "type": "boolean",
+          "default": true
+        },
+        "show_back_button": {
+          "type": "boolean",
+          "default": true
+        },
+        "auto_advance_ms": {
+          "type": "number",
+          "default": 120
+        },
+        "score_enabled": {
+          "type": "boolean",
+          "default": false
+        },
+        "lead_capture_step_index": {
+          "type": "number",
+          "default": 6
+        },
+        "tcpa_enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "tcpa_text": {
+          "type": "string"
+        },
+        "trustedform_enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "session_timeout_minutes": {
+          "type": "number",
+          "default": 60
+        },
+        "save_partial_leads": {
+          "type": "boolean",
+          "default": true
+        },
+        "url_param_brand_match": {
+          "type": "boolean",
+          "default": false
         }
+      }
+    },
+    "global_scripts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "trigger": {
+            "type": "string",
+            "enum": [
+              "on_load",
+              "on_start",
+              "on_complete",
+              "on_disqualify",
+              "on_partial_save"
+            ]
+          },
+          "language": {
+            "type": "string",
+            "default": "javascript"
+          },
+          "code": {
+            "type": "string"
+          },
+          "is_enabled": {
+            "type": "boolean",
+            "default": true
+          }
+        }
+      }
+    },
+    "global_pixels": {
+      "type": "object",
+      "properties": {
+        "meta_pixel_id": {
+          "type": "string"
+        },
+        "ga4_id": {
+          "type": "string"
+        },
+        "google_ads_id": {
+          "type": "string"
+        },
+        "tiktok_pixel_id": {
+          "type": "string"
+        },
+        "taboola_pixel_id": {
+          "type": "string"
+        },
+        "snapchat_pixel_id": {
+          "type": "string"
+        }
+      }
+    },
+    "branding_overrides": {
+      "type": "object",
+      "properties": {
+        "logo_url": {
+          "type": "string"
+        },
+        "primary_color": {
+          "type": "string"
+        },
+        "accent_color": {
+          "type": "string"
+        },
+        "background_color": {
+          "type": "string"
+        },
+        "text_color": {
+          "type": "string"
+        },
+        "custom_css": {
+          "type": "string"
+        },
+        "phone_number": {
+          "type": "string"
+        }
+      }
+    },
+    "react_flow_data": {
+      "type": "object"
+    },
+    "version": {
+      "type": "number",
+      "default": 1
+    },
+    "published_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "published_by": {
+      "type": "string"
+    },
+    "total_nodes": {
+      "type": "number",
+      "default": 0
+    },
+    "total_edges": {
+      "type": "number",
+      "default": 0
+    },
+    "total_starts": {
+      "type": "number",
+      "default": 0
+    },
+    "total_completes": {
+      "type": "number",
+      "default": 0
+    },
+    "total_qualified": {
+      "type": "number",
+      "default": 0
+    },
+    "total_disqualified": {
+      "type": "number",
+      "default": 0
+    },
+    "is_template": {
+      "type": "boolean",
+      "default": false
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
       }
     }
   },

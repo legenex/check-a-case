@@ -1,0 +1,59 @@
+{
+  "name": "DecisionTreeBrand",
+  "type": "object",
+  "properties": {
+    "brand_key": {
+      "type": "string"
+    },
+    "brand_name": {
+      "type": "string"
+    },
+    "primary_domain": {
+      "type": "string"
+    },
+    "url_match_patterns": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "logo_url": {
+      "type": "string"
+    },
+    "favicon_url": {
+      "type": "string"
+    },
+    "primary_color": {
+      "type": "string"
+    },
+    "accent_color": {
+      "type": "string"
+    },
+    "background_color": {
+      "type": "string"
+    },
+    "text_color": {
+      "type": "string"
+    },
+    "custom_css": {
+      "type": "string"
+    },
+    "header_html": {
+      "type": "string"
+    },
+    "footer_html": {
+      "type": "string"
+    },
+    "phone_number": {
+      "type": "string"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "brand_key",
+    "brand_name"
+  ]
+}

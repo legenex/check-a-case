@@ -1,0 +1,139 @@
+{
+  "name": "DecisionTreeRun",
+  "type": "object",
+  "properties": {
+    "quiz_id": {
+      "type": "string"
+    },
+    "session_id": {
+      "type": "string"
+    },
+    "current_node_id": {
+      "type": "string"
+    },
+    "brand_id": {
+      "type": "string"
+    },
+    "field_values": {
+      "type": "object"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "path_taken": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "node_id": {
+            "type": "string"
+          },
+          "entered_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "exited_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "dwell_seconds": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "qualification_tier": {
+      "type": "string",
+      "enum": [
+        "T1",
+        "T2",
+        "T3",
+        "DQ"
+      ]
+    },
+    "is_complete": {
+      "type": "boolean",
+      "default": false
+    },
+    "is_qualified": {
+      "type": "boolean",
+      "default": false
+    },
+    "is_disqualified": {
+      "type": "boolean",
+      "default": false
+    },
+    "outcome_id": {
+      "type": "string"
+    },
+    "utm_source": {
+      "type": "string"
+    },
+    "utm_medium": {
+      "type": "string"
+    },
+    "utm_campaign": {
+      "type": "string"
+    },
+    "utm_content": {
+      "type": "string"
+    },
+    "utm_term": {
+      "type": "string"
+    },
+    "sid": {
+      "type": "string"
+    },
+    "fbclid": {
+      "type": "string"
+    },
+    "gclid": {
+      "type": "string"
+    },
+    "ttclid": {
+      "type": "string"
+    },
+    "referrer": {
+      "type": "string"
+    },
+    "landing_url": {
+      "type": "string"
+    },
+    "ip_address": {
+      "type": "string"
+    },
+    "user_agent": {
+      "type": "string"
+    },
+    "device_type": {
+      "type": "string"
+    },
+    "fingerprint": {
+      "type": "string"
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "last_activity_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "abandoned_at_node_id": {
+      "type": "string"
+    },
+    "version_at_run": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "quiz_id"
+  ]
+}

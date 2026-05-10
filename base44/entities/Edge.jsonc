@@ -1,0 +1,45 @@
+{
+  "name": "Edge",
+  "type": "object",
+  "properties": {
+    "quiz_id": {
+      "type": "string"
+    },
+    "edge_id": {
+      "type": "string"
+    },
+    "source_node_id": {
+      "type": "string"
+    },
+    "target_node_id": {
+      "type": "string"
+    },
+    "source_handle": {
+      "type": "string",
+      "default": "default"
+    },
+    "target_handle": {
+      "type": "string",
+      "default": "default"
+    },
+    "label": {
+      "type": "string"
+    },
+    "condition_expression": {
+      "type": "string"
+    },
+    "animated": {
+      "type": "boolean",
+      "default": true
+    },
+    "style_color": {
+      "type": "string",
+      "default": "#94a3b8"
+    }
+  },
+  "required": [
+    "quiz_id",
+    "source_node_id",
+    "target_node_id"
+  ]
+}
