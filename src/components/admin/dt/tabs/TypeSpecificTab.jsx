@@ -157,7 +157,7 @@ export default function TypeSpecificTab({ node, quizId, onUpdate }) {
                 <input value={h.param_name} onChange={(e) => updateHandler(idx, { param_name: e.target.value })}
                   placeholder="param name (e.g. utm_source)"
                   className="flex-1 h-8 px-2 rounded border border-input bg-background text-sm font-mono" />
-                <span className="text-muted-foreground text-sm">-></span>
+                <span className="text-muted-foreground text-sm">{"→"}</span>
                 <select value={h.custom_field_id} onChange={(e) => updateHandler(idx, { custom_field_id: e.target.value })}
                   className="flex-1 h-8 px-2 rounded border border-input bg-background text-sm">
                   <option value="">-- field --</option>
