@@ -31,6 +31,8 @@ const Sponsors        = lazy(() => import('@/pages/admin/Sponsors'));
 const Advertorials    = lazy(() => import('@/pages/admin/Advertorials'));
 const ExperimentsAdmin = lazy(() => import('@/pages/admin/Experiments'));
 const Blog            = lazy(() => import('@/pages/admin/Blog'));
+const Integrations    = lazy(() => import('@/pages/admin/Integrations'));
+const Tracking        = lazy(() => import('@/pages/admin/Tracking'));
 
 // ── Lazily loaded: tools ──────────────────────────────────────────────────────
 const ClaimEstimator    = lazy(() => import('@/pages/tools/ClaimEstimator'));
@@ -125,8 +127,8 @@ const AuthenticatedApp = () => {
           <Route path="advertorials" element={<Advertorials />} />
           <Route path="experiments" element={<ExperimentsAdmin />} />
           <Route path="chatbot" element={<AdminPlaceholder />} />
-          <Route path="integrations" element={<AdminPlaceholder />} />
-          <Route path="tracking" element={<AdminPlaceholder />} />
+          <Route path="integrations" element={<Integrations />} />
+          <Route path="tracking" element={<Tracking />} />
           <Route path="users" element={<AdminPlaceholder />} />
           <Route path="settings" element={<AdminPlaceholder />} />
         </Route>
