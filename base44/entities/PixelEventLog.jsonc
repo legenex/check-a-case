@@ -1,0 +1,54 @@
+{
+  "name": "PixelEventLog",
+  "type": "object",
+  "properties": {
+    "event_id": {
+      "type": "string"
+    },
+    "event_name": {
+      "type": "string"
+    },
+    "site_event": {
+      "type": "string"
+    },
+    "pixel_platform": {
+      "type": "string"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "browser",
+        "server_capi",
+        "both"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "fired",
+        "error",
+        "pending"
+      ],
+      "default": "pending"
+    },
+    "response_code": {
+      "type": "number"
+    },
+    "response_body": {
+      "type": "string"
+    },
+    "page_url": {
+      "type": "string"
+    },
+    "lead_id": {
+      "type": "string"
+    },
+    "fired_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "event_name"
+  ]
+}

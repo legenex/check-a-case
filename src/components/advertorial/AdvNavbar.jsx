@@ -18,7 +18,7 @@ export default function AdvNavbar({ slug, finalCtaUrl }) {
       <nav className={`fixed top-0 left-0 right-0 z-50 h-20 flex items-center transition-all duration-300 ${
         scrolled ? "backdrop-blur-xl bg-white/90 border-b border-black/8 shadow-sm" : "bg-white border-b border-gray-100"
       }`}>
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 w-full flex items-center justify-between">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 w-full flex items-center justify-between">
           <a href="/">
             <img
               src="https://checkacase.com/wp-content/uploads/2023/05/CAC-Logo-Blue.png"

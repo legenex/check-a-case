@@ -1,0 +1,53 @@
+{
+  "name": "TrackingScript",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "enabled": {
+      "type": "boolean",
+      "default": false
+    },
+    "injection_point": {
+      "type": "string",
+      "enum": [
+        "head_top",
+        "head_bottom",
+        "body_open",
+        "body_close"
+      ],
+      "default": "head_top"
+    },
+    "script_content": {
+      "type": "string"
+    },
+    "scope_type": {
+      "type": "string",
+      "enum": [
+        "site_wide",
+        "route_pattern",
+        "event_hook"
+      ],
+      "default": "site_wide"
+    },
+    "route_patterns": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "event_hooks": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

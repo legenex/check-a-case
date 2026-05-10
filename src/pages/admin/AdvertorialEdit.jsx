@@ -54,6 +54,20 @@ export default function AdvertorialEdit({ advertorial, onBack }) {
 
   const set = (key, val) => setForm((f) => ({ ...f, [key]: val }));
 
+  function computeWordStats(body) {
+    if (!body) return { word_count: 0, length_classification: "short_form" };
+    const cleaned = body
+      .replace(/\[CTA_INLINE_\d+\]/g, "")
+      .replace(/\[MID_IMAGE\]/g, "")
+      .replace(/[#*_`>~\-]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    const count = cleaned ? cleaned.split(" ").filter(Boolean).length : 0;
+    return { word_count: count, length_classification: count <= 1100 ? "short_form" : "long_form" };
+  }
+
+  const liveWordStats = computeWordStats(form.body);
+
   // Auto-slug from title on new records
   useEffect(() => {
     if (isNew && form.title) {
@@ -74,7 +88,8 @@ export default function AdvertorialEdit({ advertorial, onBack }) {
       redirects = [...redirects, originalSlug];
     }
 
-    const payload = { ...form, slug: slugVal, slug_redirects: redirects };
+    const wordStats = computeWordStats(form.body);
+    const payload = { ...form, slug: slugVal, slug_redirects: redirects, ...wordStats };
     delete payload.id; delete payload.created_date; delete payload.updated_date; delete payload.created_by;
 
     if (isNew) {
@@ -215,6 +230,15 @@ export default function AdvertorialEdit({ advertorial, onBack }) {
                   className="w-full border border-border rounded-xl p-4 font-mono text-sm resize-y focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground"
                   style={{ minHeight: 600 }}
                 />
+                <div className="flex items-center gap-2 mt-1.5">
+                  <span className="text-xs text-muted-foreground">{liveWordStats.word_count} words</span>
+                  <span className="text-xs text-muted-foreground">·</span>
+                  {liveWordStats.length_classification === "short_form" ? (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">Short Form</span>
+                  ) : (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">Long Form</span>
+                  )}
+                </div>
               </Field>
               {form.body_original_backup && (
                 <div className="flex items-center gap-3 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">

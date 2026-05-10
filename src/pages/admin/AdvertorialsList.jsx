@@ -27,6 +27,7 @@ export default function AdvertorialsList({ onEdit, onCreate }) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [templateFilter, setTemplateFilter] = useState("all");
+  const [lengthFilter, setLengthFilter] = useState("all");
   const [simplifyModal, setSimplifyModal] = useState(false);
   const [simplifyProgress, setSimplifyProgress] = useState(null); // { current, total, done, error }
   const qc = useQueryClient();
@@ -42,7 +43,8 @@ export default function AdvertorialsList({ onEdit, onCreate }) {
       a.slug?.toLowerCase().includes(search.toLowerCase());
     const matchStatus = statusFilter === "all" || a.status === statusFilter;
     const matchTemplate = templateFilter === "all" || a.template === templateFilter;
-    return matchSearch && matchStatus && matchTemplate;
+    const matchLength = lengthFilter === "all" || a.length_classification === lengthFilter;
+    return matchSearch && matchStatus && matchTemplate && matchLength;
   });
 
   const handleArchive = async (e, id) => {
@@ -194,6 +196,16 @@ export default function AdvertorialsList({ onEdit, onCreate }) {
             <SelectItem value="whistleblower">Whistleblower</SelectItem>
           </SelectContent>
         </Select>
+        <Select value={lengthFilter} onValueChange={setLengthFilter}>
+          <SelectTrigger className="w-44 rounded-xl">
+            <SelectValue placeholder="Length" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Lengths</SelectItem>
+            <SelectItem value="short_form">Short Form</SelectItem>
+            <SelectItem value="long_form">Long Form</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <p className="text-sm text-muted-foreground">{filtered.length} advertorials</p>
@@ -206,6 +218,7 @@ export default function AdvertorialsList({ onEdit, onCreate }) {
                 <th className="text-left p-4 font-medium text-muted-foreground">Title</th>
                 <th className="text-left p-4 font-medium text-muted-foreground hidden sm:table-cell">Slug</th>
                 <th className="text-left p-4 font-medium text-muted-foreground hidden md:table-cell">Template</th>
+                <th className="text-left p-4 font-medium text-muted-foreground hidden lg:table-cell">Length</th>
                 <th className="text-left p-4 font-medium text-muted-foreground">Status</th>
                 <th className="text-left p-4 font-medium text-muted-foreground hidden lg:table-cell">Updated</th>
                 <th className="text-left p-4 font-medium text-muted-foreground w-32"></th>
@@ -231,6 +244,15 @@ export default function AdvertorialsList({ onEdit, onCreate }) {
                   </td>
                   <td className="p-4 text-muted-foreground hidden md:table-cell">
                     {TEMPLATE_LABELS[adv.template] || adv.template || "—"}
+                  </td>
+                  <td className="p-4 hidden lg:table-cell">
+                    {adv.length_classification === "short_form" ? (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">Short Form</span>
+                    ) : adv.length_classification === "long_form" ? (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">Long Form</span>
+                    ) : (
+                      <span className="text-muted-foreground text-xs">—</span>
+                    )}
                   </td>
                   <td className="p-4">
                     <Badge className={`text-xs ${STATUS_COLORS[adv.status] || "bg-muted text-muted-foreground"}`}>

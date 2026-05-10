@@ -34,6 +34,18 @@
       "type": "string",
       "description": "Backup of body before bulk simplify rewrite"
     },
+    "word_count": {
+      "type": "number",
+      "default": 0
+    },
+    "length_classification": {
+      "type": "string",
+      "enum": [
+        "short_form",
+        "long_form"
+      ],
+      "default": "long_form"
+    },
     "pull_quote": {
       "type": "string"
     },

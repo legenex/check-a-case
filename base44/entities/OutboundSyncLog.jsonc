@@ -1,0 +1,44 @@
+{
+  "name": "OutboundSyncLog",
+  "type": "object",
+  "properties": {
+    "integration_type": {
+      "type": "string"
+    },
+    "entity_type": {
+      "type": "string"
+    },
+    "entity_id": {
+      "type": "string"
+    },
+    "action": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "success",
+        "failed",
+        "retry_pending"
+      ],
+      "default": "failed"
+    },
+    "error_message": {
+      "type": "string"
+    },
+    "response_code": {
+      "type": "number"
+    },
+    "attempted_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "retry_count": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "required": [
+    "integration_type"
+  ]
+}

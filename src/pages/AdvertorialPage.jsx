@@ -34,16 +34,20 @@ function BodyWithMidBlock({ body, adv, slug }) {
 
   return (
     <>
-      <ReactMarkdown className="prose prose-lg max-w-none prose-headings:font-black prose-headings:text-foreground prose-p:text-foreground/85 prose-p:leading-relaxed prose-a:text-primary prose-strong:text-foreground">
-        {before}
-      </ReactMarkdown>
+      <div className="lg:px-16">
+        <ReactMarkdown className="prose prose-lg max-w-none prose-headings:font-black prose-headings:text-foreground prose-p:text-foreground/85 prose-p:leading-relaxed prose-a:text-primary prose-strong:text-foreground">
+          {before}
+        </ReactMarkdown>
+      </div>
 
       {hasMidBlock && <MidSplitBlock adv={adv} slug={slug} />}
 
       {after && (
-        <ReactMarkdown className="prose prose-lg max-w-none prose-headings:font-black prose-headings:text-foreground prose-p:text-foreground/85 prose-p:leading-relaxed prose-a:text-primary prose-strong:text-foreground">
-          {after}
-        </ReactMarkdown>
+        <div className="lg:px-16">
+          <ReactMarkdown className="prose prose-lg max-w-none prose-headings:font-black prose-headings:text-foreground prose-p:text-foreground/85 prose-p:leading-relaxed prose-a:text-primary prose-strong:text-foreground">
+            {after}
+          </ReactMarkdown>
+        </div>
       )}
     </>
   );
@@ -85,7 +89,7 @@ export default function AdvertorialPage() {
       <AdvNavbar slug={slug} finalCtaUrl={adv.final_cta_url} />
 
       <main className="pt-24 pb-16">
-        <div className="max-w-[860px] mx-auto px-4 sm:px-6">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
 
           {/* Pull quote / eyebrow */}
           {adv.pull_quote && (
