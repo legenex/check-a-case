@@ -1,9 +1,9 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
-  LayoutDashboard, BarChart3, Users2, Phone, ClipboardList,
+  LayoutDashboard, BarChart3, Users2, Phone, GitBranch,
   Layers, FileText, Briefcase, BookOpen, Search, Newspaper,
-  FlaskConical, Bot, Plug, Activity, UserCog, Settings
+  FlaskConical, Bot, Plug, Activity, UserCog, Settings, Database
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -12,7 +12,8 @@ const NAV_ITEMS = [
   { label: "Analytics", path: "/admin/analytics", icon: BarChart3 },
   { label: "Leads", path: "/admin/leads", icon: Users2 },
   { label: "Numbers", path: "/admin/numbers", icon: Phone },
-  { label: "Quizzes", path: "/admin/quizzes", icon: ClipboardList },
+  { label: "Decision Trees", path: "/admin/decision-trees", icon: GitBranch },
+  { label: "Custom Fields", path: "/admin/custom-fields", icon: Database },
   { label: "Landing Pages", path: "/admin/landing-pages", icon: Layers },
   { label: "Pages", path: "/admin/pages", icon: FileText },
   { label: "Sponsors", path: "/admin/sponsors", icon: Users2 },

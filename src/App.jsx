@@ -33,6 +33,10 @@ const ExperimentsAdmin = lazy(() => import('@/pages/admin/Experiments'));
 const Blog            = lazy(() => import('@/pages/admin/Blog'));
 const Integrations    = lazy(() => import('@/pages/admin/Integrations'));
 const Tracking        = lazy(() => import('@/pages/admin/Tracking'));
+const DecisionTrees   = lazy(() => import('@/pages/admin/DecisionTrees'));
+const DecisionTreeBuilder = lazy(() => import('@/pages/admin/DecisionTreeBuilder'));
+const CustomFields    = lazy(() => import('@/pages/admin/CustomFields'));
+const QuizzesRedirect = lazy(() => import('@/pages/admin/QuizzesRedirect'));
 
 // ── Lazily loaded: tools ──────────────────────────────────────────────────────
 const ClaimEstimator    = lazy(() => import('@/pages/tools/ClaimEstimator'));
@@ -126,6 +130,10 @@ const AuthenticatedApp = () => {
           <Route path="seo" element={<AdminPlaceholder />} />
           <Route path="advertorials" element={<Advertorials />} />
           <Route path="experiments" element={<ExperimentsAdmin />} />
+          <Route path="quizzes" element={<QuizzesRedirect />} />
+          <Route path="decision-trees" element={<DecisionTrees />} />
+          <Route path="decision-trees/:quizId/edit" element={<DecisionTreeBuilder />} />
+          <Route path="custom-fields" element={<CustomFields />} />
           <Route path="chatbot" element={<AdminPlaceholder />} />
           <Route path="integrations" element={<Integrations />} />
           <Route path="tracking" element={<Tracking />} />
