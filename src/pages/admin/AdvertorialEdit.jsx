@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, Save, ExternalLink, RefreshCw } from "lucide-react";
+import { ChevronLeft, Save, ExternalLink, RefreshCw, RotateCcw } from "lucide-react";
 
 const SECTIONS = [
   { key: "basics", label: "Basics" },
@@ -35,8 +35,10 @@ export default function AdvertorialEdit({ advertorial, onBack }) {
 
   const [form, setForm] = useState({
     title: "", slug: "", template: "personal_story", status: "draft",
-    cta_style: "gold_gradient", body: "", pull_quote: "",
-    hero_image_url: "", inline_image_url: "", og_image_url: "",
+    cta_style: "gold_gradient", body: "", pull_quote: "", body_original_backup: "",
+    hero_image_url: "", hero_image_alt: "", hero_image_caption: "",
+    inline_image_url: "", og_image_url: "",
+    mid_image_url: "", mid_image_alt: "", mid_image_caption: "", mid_image_insert_after_paragraph: 4,
     mid_cta_text: "", mid_cta_url: "", final_cta_text: "", final_cta_url: "",
     seo_title: "", seo_description: "", slug_redirects: [],
     ...(advertorial || {}),
@@ -48,6 +50,7 @@ export default function AdvertorialEdit({ advertorial, onBack }) {
   const [error, setError] = useState("");
   const [activeSection, setActiveSection] = useState("basics");
   const [previewTs, setPreviewTs] = useState(Date.now());
+  const [restoring, setRestoring] = useState(false);
 
   const set = (key, val) => setForm((f) => ({ ...f, [key]: val }));
 
@@ -84,6 +87,19 @@ export default function AdvertorialEdit({ advertorial, onBack }) {
     setSavedAt(new Date());
     setSaving(false);
     setPreviewTs(Date.now());
+  };
+
+  const handleRestoreOriginal = async () => {
+    if (!form.body_original_backup) return;
+    setRestoring(true);
+    const restoredBody = form.body_original_backup;
+    set("body", restoredBody);
+    set("body_original_backup", "");
+    if (advertorial?.id) {
+      await base44.entities.Advertorial.update(advertorial.id, { body: restoredBody, body_original_backup: "" });
+      qc.invalidateQueries({ queryKey: ["admin-advertorials"] });
+    }
+    setRestoring(false);
   };
 
   const previewUrl = form.slug ? `/a/${form.slug}?preview=1&ts=${previewTs}` : null;
@@ -191,7 +207,7 @@ export default function AdvertorialEdit({ advertorial, onBack }) {
 
           {activeSection === "content" && (
             <div className="space-y-4 pt-4">
-              <Field label="Body (Markdown)" hint="Use # headings, > blockquotes, **bold**, *italic*, etc.">
+              <Field label="Body (Markdown)" hint="Use [CTA_INLINE_1], [CTA_INLINE_2], [CTA_INLINE_3] for inline CTAs. Use [MID_IMAGE] to place the float image manually.">
                 <textarea
                   value={form.body || ""}
                   onChange={(e) => set("body", e.target.value)}
@@ -200,6 +216,21 @@ export default function AdvertorialEdit({ advertorial, onBack }) {
                   style={{ minHeight: 600 }}
                 />
               </Field>
+              {form.body_original_backup && (
+                <div className="flex items-center gap-3 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
+                  <span className="text-sm text-amber-800 flex-1">Original body is backed up. This body was rewritten by the simplifier.</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 border-amber-300 text-amber-800 hover:bg-amber-100"
+                    onClick={handleRestoreOriginal}
+                    disabled={restoring}
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    {restoring ? "Restoring…" : "Restore original"}
+                  </Button>
+                </div>
+              )}
               <Field label="Pull Quote" hint="Displayed as italic subhead below the headline.">
                 <textarea
                   value={form.pull_quote || ""}
@@ -213,13 +244,42 @@ export default function AdvertorialEdit({ advertorial, onBack }) {
           )}
 
           {activeSection === "images" && (
-            <div className="space-y-4 pt-4">
-              <Field label="Hero Image URL" hint="Displayed above the headline if present.">
+            <div className="space-y-5 pt-4">
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Hero Image</p>
+              <Field label="Hero Image URL" hint="Displayed below the headline. Shown at 16:9 aspect ratio.">
                 <Input value={form.hero_image_url || ""} onChange={(e) => set("hero_image_url", e.target.value)} placeholder="https://…" className="rounded-xl" />
               </Field>
-              <Field label="Inline Image URL" hint="Placed mid-article after the second section.">
-                <Input value={form.inline_image_url || ""} onChange={(e) => set("inline_image_url", e.target.value)} placeholder="https://…" className="rounded-xl" />
+              <Field label="Hero Image Alt Text">
+                <Input value={form.hero_image_alt || ""} onChange={(e) => set("hero_image_alt", e.target.value)} placeholder="Describe the image…" className="rounded-xl" />
               </Field>
+              <Field label="Hero Image Caption" hint="Optional caption shown below hero image.">
+                <Input value={form.hero_image_caption || ""} onChange={(e) => set("hero_image_caption", e.target.value)} placeholder="Optional caption…" className="rounded-xl" />
+              </Field>
+
+              <div className="border-t border-border pt-4" />
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Mid-Article Float Image</p>
+              <Field label="Mid-Article Image URL" hint="Appears float-right partway through the article. Text wraps around it on desktop.">
+                <Input value={form.mid_image_url || ""} onChange={(e) => set("mid_image_url", e.target.value)} placeholder="https://…" className="rounded-xl" />
+              </Field>
+              <Field label="Mid-Article Image Alt Text">
+                <Input value={form.mid_image_alt || ""} onChange={(e) => set("mid_image_alt", e.target.value)} placeholder="Describe the image…" className="rounded-xl" />
+              </Field>
+              <Field label="Mid-Article Image Caption" hint="Optional caption below the float image.">
+                <Input value={form.mid_image_caption || ""} onChange={(e) => set("mid_image_caption", e.target.value)} placeholder="Optional caption…" className="rounded-xl" />
+              </Field>
+              <Field label="Insert after paragraph #" hint="The float image appears after this many paragraphs. Default: 4.">
+                <Input
+                  type="number"
+                  min={1}
+                  max={20}
+                  value={form.mid_image_insert_after_paragraph ?? 4}
+                  onChange={(e) => set("mid_image_insert_after_paragraph", parseInt(e.target.value) || 4)}
+                  className="rounded-xl w-28"
+                />
+              </Field>
+
+              <div className="border-t border-border pt-4" />
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Social / SEO</p>
               <Field label="OG Image URL" hint="Used for social sharing. Falls back to hero image.">
                 <Input value={form.og_image_url || ""} onChange={(e) => set("og_image_url", e.target.value)} placeholder="https://…" className="rounded-xl" />
               </Field>

@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search, ExternalLink, Pencil, Copy, Archive } from "lucide-react";
+import { Plus, Search, ExternalLink, Pencil, Copy, Archive, Wand2, X } from "lucide-react";
 import { format } from "date-fns";
+import { bulkSimplifyAdvertorials } from "@/functions/bulkSimplifyAdvertorials";
 
 const STATUS_COLORS = {
   published: "bg-green-100 text-green-700",
@@ -26,6 +27,8 @@ export default function AdvertorialsList({ onEdit, onCreate }) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [templateFilter, setTemplateFilter] = useState("all");
+  const [simplifyModal, setSimplifyModal] = useState(false);
+  const [simplifyProgress, setSimplifyProgress] = useState(null); // { current, total, done, error }
   const qc = useQueryClient();
 
   const { data: advertorials = [], isLoading } = useQuery({
@@ -48,6 +51,23 @@ export default function AdvertorialsList({ onEdit, onCreate }) {
     qc.invalidateQueries({ queryKey: ["admin-advertorials"] });
   };
 
+  const eligible = advertorials.filter(a => a.status !== "archived" && a.body);
+
+  const handleBulkSimplify = async () => {
+    setSimplifyProgress({ current: 0, total: eligible.length, done: false, error: null });
+    for (let i = 0; i < eligible.length; i++) {
+      const adv = eligible[i];
+      setSimplifyProgress({ current: i + 1, total: eligible.length, done: false, error: null });
+      try {
+        await bulkSimplifyAdvertorials({ advertorial_id: adv.id });
+      } catch (err) {
+        setSimplifyProgress(prev => ({ ...prev, error: `Error on "${adv.title}": ${err.message}` }));
+      }
+    }
+    qc.invalidateQueries({ queryKey: ["admin-advertorials"] });
+    setSimplifyProgress(prev => ({ ...prev, done: true }));
+  };
+
   const handleDuplicate = async (e, advertorial) => {
     e.stopPropagation();
     const { id, created_date, updated_date, created_by, ...rest } = advertorial;
@@ -66,10 +86,79 @@ export default function AdvertorialsList({ onEdit, onCreate }) {
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="text-3xl font-bold text-foreground">Advertorials</h1>
-        <Button className="rounded-xl gap-2" onClick={onCreate}>
-          <Plus className="w-4 h-4" /> New Advertorial
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" className="rounded-xl gap-2" onClick={() => setSimplifyModal(true)}>
+            <Wand2 className="w-4 h-4" /> Bulk Simplify
+          </Button>
+          <Button className="rounded-xl gap-2" onClick={onCreate}>
+            <Plus className="w-4 h-4" /> New Advertorial
+          </Button>
+        </div>
       </div>
+
+      {/* Bulk Simplify Modal */}
+      {simplifyModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-background rounded-2xl border border-border shadow-2xl p-6 w-full max-w-md space-y-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-bold text-foreground">Bulk Simplify All Advertorials</h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  This will rewrite all {eligible.length} advertorial bodies in plain English (6th-grade reading level). Original bodies will be preserved as a backup and can be restored per-article.
+                </p>
+              </div>
+              {!simplifyProgress && (
+                <button onClick={() => setSimplifyModal(false)} className="text-muted-foreground hover:text-foreground">
+                  <X className="w-5 h-5" />
+                </button>
+              )}
+            </div>
+
+            {!simplifyProgress && (
+              <div className="flex gap-2 pt-2">
+                <Button variant="outline" className="flex-1 rounded-xl" onClick={() => setSimplifyModal(false)}>
+                  Cancel
+                </Button>
+                <Button className="flex-1 rounded-xl gap-2" onClick={handleBulkSimplify}>
+                  <Wand2 className="w-4 h-4" /> Rewrite All
+                </Button>
+              </div>
+            )}
+
+            {simplifyProgress && !simplifyProgress.done && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-foreground font-medium">Rewriting {simplifyProgress.current} of {simplifyProgress.total}...</span>
+                  <span className="text-muted-foreground">{Math.round((simplifyProgress.current / simplifyProgress.total) * 100)}%</span>
+                </div>
+                <div className="w-full bg-muted rounded-full h-2">
+                  <div
+                    className="bg-primary h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${(simplifyProgress.current / simplifyProgress.total) * 100}%` }}
+                  />
+                </div>
+                {simplifyProgress.error && (
+                  <p className="text-xs text-destructive bg-destructive/10 rounded-lg px-3 py-2">{simplifyProgress.error}</p>
+                )}
+              </div>
+            )}
+
+            {simplifyProgress?.done && (
+              <div className="space-y-3">
+                <div className="rounded-xl bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-800">
+                  Done. {eligible.length} articles rewritten. Original versions backed up per article.
+                </div>
+                {simplifyProgress.error && (
+                  <p className="text-xs text-destructive bg-destructive/10 rounded-lg px-3 py-2">{simplifyProgress.error}</p>
+                )}
+                <Button className="w-full rounded-xl" onClick={() => { setSimplifyModal(false); setSimplifyProgress(null); }}>
+                  Close
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3">

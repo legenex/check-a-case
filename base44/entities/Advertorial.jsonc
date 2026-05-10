@@ -30,10 +30,20 @@
       "type": "string",
       "description": "Markdown content"
     },
+    "body_original_backup": {
+      "type": "string",
+      "description": "Backup of body before bulk simplify rewrite"
+    },
     "pull_quote": {
       "type": "string"
     },
     "hero_image_url": {
+      "type": "string"
+    },
+    "hero_image_alt": {
+      "type": "string"
+    },
+    "hero_image_caption": {
       "type": "string"
     },
     "inline_image_url": {
@@ -41,6 +51,16 @@
     },
     "mid_image_url": {
       "type": "string"
+    },
+    "mid_image_alt": {
+      "type": "string"
+    },
+    "mid_image_caption": {
+      "type": "string"
+    },
+    "mid_image_insert_after_paragraph": {
+      "type": "number",
+      "default": 4
     },
     "mid_image_eyebrow": {
       "type": "string",
