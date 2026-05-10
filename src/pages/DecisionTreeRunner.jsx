@@ -16,7 +16,7 @@ const NON_BLOCKING_TYPES = new Set([
   'notification_messenger', 'notification_telegram', 'transition', 'decision_node',
 ]);
 
-export default function DecisionTreeRunner({ slug, previewMode }) {
+export default function DecisionTreeRunner({ slug, previewMode, replayMode, replayRunId }) {
   const [phase, setPhase] = useState('loading');
   const [quiz, setQuiz] = useState(null);
   const [nodes, setNodes] = useState([]);
@@ -70,7 +70,7 @@ export default function DecisionTreeRunner({ slug, previewMode }) {
   const boot = async () => {
     setPhase('loading');
     try {
-      captureAttribution();
+      if (!replayMode) captureAttribution();
 
       // 1. Fetch quiz
       const quizzes = await base44.entities.Quiz.filter({ slug });
@@ -122,6 +122,27 @@ export default function DecisionTreeRunner({ slug, previewMode }) {
       }
 
       // 7. Find or create run
+      // Replay mode: load the specific run, apply its field values, and walk the path
+      if (replayMode && replayRunId) {
+        const replayRuns = await base44.entities.DecisionTreeRun.filter({ id: replayRunId });
+        const replayRun = replayRuns[0];
+        if (replayRun) {
+          setFieldValues(replayRun.field_values || {});
+          setTags(replayRun.tags || []);
+          setPathTaken(replayRun.path_taken || []);
+          runRef.current = { ...replayRun, _replay: true };
+          setRunId(replayRun.id);
+          const startNode = graph.nodeMap[replayRun.path_taken?.[0]?.node_id] || findStartNode(allNodes);
+          if (startNode) {
+            setCurrentNodeId(startNode.node_id || startNode.id);
+            setPhase('running');
+          } else {
+            setPhase('not_found');
+          }
+          return;
+        }
+      }
+
       const timeoutMin = q.settings?.session_timeout_minutes ?? 60;
       const cutoff = new Date(Date.now() - timeoutMin * 60 * 1000).toISOString();
       const existingRuns = await base44.entities.DecisionTreeRun.filter({ quiz_id: q.id, session_id: sid, is_complete: false });

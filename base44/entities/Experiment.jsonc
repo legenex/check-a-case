@@ -24,6 +24,10 @@
     "entity_id": {
       "type": "string"
     },
+    "target_quiz_id": {
+      "type": "string",
+      "description": "Quiz this experiment targets"
+    },
     "variants": {
       "type": "array",
       "items": {

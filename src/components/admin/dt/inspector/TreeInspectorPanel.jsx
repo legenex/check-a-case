@@ -1,5 +1,8 @@
 import React, { useState } from "react";
-import { Settings, Palette, Globe, Layers, Code2, Layout, Clock, BarChart2 } from "lucide-react";
+import { Settings, Palette, Globe, Layers, Code2, Clock, BarChart2, RotateCcw, ExternalLink } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { base44 } from "@/api/base44Client";
 
 const TABS = [
   { id: "settings", label: "Settings", icon: Settings },
@@ -13,6 +16,9 @@ const TABS = [
 
 export default function TreeInspectorPanel({ quiz, quizId, brands, onUpdateQuiz }) {
   const [activeTab, setActiveTab] = useState("settings");
+  const [rollbackConfirm, setRollbackConfirm] = useState(null);
+  const navigate = useNavigate();
+  const qc = useQueryClient();
   const settings = quiz?.settings || {};
   const branding = quiz?.branding_overrides || {};
   const pixels = quiz?.global_pixels || {};
@@ -232,15 +238,84 @@ export default function TreeInspectorPanel({ quiz, quizId, brands, onUpdateQuiz 
               <p className="text-xs text-slate-400 italic">No published versions yet. Publish the tree to create a snapshot.</p>
             ) : (
               <div className="space-y-2">
-                {(quiz?.version_history || []).map((v) => (
+                {[...(quiz?.version_history || [])].reverse().map((v) => (
                   <div key={v.version} className="p-3 rounded-lg border border-slate-200 bg-slate-50">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-semibold text-slate-700">v{v.version}</span>
                       <span className="text-xs text-slate-400">{v.published_at ? new Date(v.published_at).toLocaleDateString() : ""}</span>
                     </div>
                     {v.published_by && <p className="text-xs text-slate-500 mt-0.5">by {v.published_by}</p>}
+                    {v.tag && <p className="text-xs text-amber-600 mt-0.5 font-mono">{v.tag}</p>}
+                    {v.nodes_snapshot && (
+                      <button
+                        onClick={() => setRollbackConfirm(v)}
+                        className="mt-2 flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 transition-colors">
+                        <RotateCcw className="w-3 h-3" /> Rollback to v{v.version}
+                      </button>
+                    )}
                   </div>
                 ))}
+              </div>
+            )}
+
+            {rollbackConfirm && (
+              <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setRollbackConfirm(null)}>
+                <div className="bg-white rounded-xl border border-slate-200 p-6 w-full max-w-md space-y-4" onClick={e => e.stopPropagation()}>
+                  <h2 className="text-lg font-bold text-slate-800">Rollback to v{rollbackConfirm.version}?</h2>
+                  <p className="text-sm text-slate-600">
+                    Current state will be backed up as a new version entry. The tree will revert to its v{rollbackConfirm.version} state and be set to draft.
+                  </p>
+                  <div className="flex gap-3 justify-end">
+                    <button onClick={() => setRollbackConfirm(null)}
+                      className="px-4 py-2 rounded-lg border border-slate-200 text-sm hover:bg-slate-50">Cancel</button>
+                    <button
+                      onClick={async () => {
+                        const snapshot = rollbackConfirm;
+                        const currentVersion = quiz?.version || 1;
+                        // Backup current state into version_history
+                        const dbQuestions = await base44.entities.Question.filter({ quiz_id: quizId });
+                        const dbEdges = await base44.entities.Edge.filter({ quiz_id: quizId });
+                        const backupEntry = {
+                          version: currentVersion,
+                          published_at: new Date().toISOString(),
+                          published_by: "system",
+                          tag: `pre_rollback_v${snapshot.version + 1}`,
+                          nodes_snapshot: dbQuestions,
+                          edges_snapshot: dbEdges,
+                        };
+                        const existingHistory = quiz?.version_history || [];
+                        const newHistory = [...existingHistory, backupEntry];
+
+                        // Delete current nodes + edges
+                        for (const q of dbQuestions) await base44.entities.Question.delete(q.id);
+                        for (const e of dbEdges) await base44.entities.Edge.delete(e.id);
+
+                        // Recreate from snapshot
+                        for (const n of snapshot.nodes_snapshot) {
+                          await base44.entities.Question.create({ ...n, id: undefined, quiz_id: quizId });
+                        }
+                        for (const e of (snapshot.edges_snapshot || [])) {
+                          await base44.entities.Edge.create({ ...e, id: undefined, quiz_id: quizId });
+                        }
+
+                        // Update quiz
+                        await base44.entities.Quiz.update(quizId, {
+                          version: currentVersion + 1,
+                          status: "draft",
+                          version_history: newHistory,
+                        });
+
+                        qc.invalidateQueries(["quiz", quizId]);
+                        qc.invalidateQueries(["questions", quizId]);
+                        qc.invalidateQueries(["edges", quizId]);
+                        setRollbackConfirm(null);
+                        alert(`Rolled back to v${snapshot.version}. Tree is now draft. Publish when ready.`);
+                      }}
+                      className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700">
+                      Confirm Rollback
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -249,7 +324,6 @@ export default function TreeInspectorPanel({ quiz, quizId, brands, onUpdateQuiz 
         {activeTab === "analytics" && (
           <div className="space-y-4">
             <h3 className="text-sm font-semibold text-slate-700">Analytics</h3>
-            <p className="text-xs text-slate-400 italic">Coming in Phase 4.</p>
             <div className="grid grid-cols-2 gap-3">
               {[
                 { label: "Starts", val: quiz?.total_starts || 0 },
@@ -263,6 +337,11 @@ export default function TreeInspectorPanel({ quiz, quizId, brands, onUpdateQuiz 
                 </div>
               ))}
             </div>
+            <button
+              onClick={() => navigate(`/admin/decision-trees/${quizId}/analytics`)}
+              className="w-full flex items-center justify-center gap-2 py-2 rounded-lg border border-slate-200 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
+              <ExternalLink className="w-3.5 h-3.5" /> Open Full Analytics
+            </button>
           </div>
         )}
       </div>

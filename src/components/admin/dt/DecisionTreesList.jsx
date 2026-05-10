@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { Wrench, Settings, ExternalLink, Copy, Eye, EyeOff, Archive, Trash2 } from "lucide-react";
+import { Wrench, ExternalLink, Copy, Eye, EyeOff, Archive, Trash2, Bookmark, BarChart2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const CAMPAIGN_LABELS = {
@@ -55,6 +55,7 @@ export default function DecisionTreesList({ onOpenBuilder }) {
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterCampaign, setFilterCampaign] = useState("all");
   const [filterBrand, setFilterBrand] = useState("all");
+  const [showTemplates, setShowTemplates] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [confirmDeleteSlug, setConfirmDeleteSlug] = useState("");
 
@@ -97,6 +98,7 @@ export default function DecisionTreesList({ onOpenBuilder }) {
   const brandMap = Object.fromEntries(brands.map((b) => [b.id, b]));
 
   const filtered = quizzes.filter((q) => {
+    if (showTemplates ? !q.is_template : q.is_template) return false;
     if (filterStatus !== "all" && q.status !== filterStatus) return false;
     if (filterCampaign !== "all" && q.campaign_type !== filterCampaign) return false;
     if (filterBrand !== "all" && q.brand_id !== filterBrand) return false;
@@ -106,6 +108,18 @@ export default function DecisionTreesList({ onOpenBuilder }) {
 
   return (
     <div className="space-y-4">
+      {/* Tab toggle */}
+      <div className="flex gap-1 bg-muted rounded-lg p-1 w-fit">
+        <button onClick={() => setShowTemplates(false)}
+          className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${!showTemplates ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}>
+          All Trees
+        </button>
+        <button onClick={() => setShowTemplates(true)}
+          className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${showTemplates ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}>
+          Templates
+        </button>
+      </div>
+
       {/* Filters */}
       <div className="flex flex-wrap gap-3">
         <input type="text" placeholder="Search by title or slug..." value={search}
@@ -182,8 +196,11 @@ export default function DecisionTreesList({ onOpenBuilder }) {
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-0.5 opacity-60 group-hover:opacity-100 transition-opacity">
                       <IconButton icon={Wrench} tooltip="Open Builder" onClick={() => onOpenBuilder(q.id)} primary />
+                      <IconButton icon={BarChart2} tooltip="Analytics" onClick={() => navigate(`/admin/decision-trees/${q.id}/analytics`)} />
                       <IconButton icon={ExternalLink} tooltip="View Public Link" onClick={() => window.open(`/q/${q.slug}?preview=1`, "_blank")} />
                       <IconButton icon={Copy} tooltip="Duplicate" onClick={() => copyMut.mutate(q)} />
+                      <IconButton icon={Bookmark} tooltip={q.is_template ? "Remove Template" : "Save as Template"}
+                        onClick={() => updateMut.mutate({ id: q.id, data: { is_template: !q.is_template } })} />
                       <IconButton
                         icon={q.status === "published" ? EyeOff : Eye}
                         tooltip={q.status === "published" ? "Unpublish" : "Publish"}

@@ -341,7 +341,13 @@ export default function AdvancedBuilder() {
     }
     const user = await base44.auth.me();
     const newVersion = (quiz?.version || 1) + 1;
-    const snapshot = { version: newVersion, published_at: new Date().toISOString(), published_by: user?.email || "admin" };
+    const snapshot = {
+      version: newVersion,
+      published_at: new Date().toISOString(),
+      published_by: user?.email || "admin",
+      nodes_snapshot: dbQuestions,
+      edges_snapshot: dbEdges,
+    };
     const history = [...(quiz?.version_history || []), snapshot];
     await base44.entities.Quiz.update(quizId, {
       status: "published",

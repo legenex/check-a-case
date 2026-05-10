@@ -52,18 +52,7 @@
             "type": "string"
           },
           "type": {
-            "type": "string",
-            "enum": [
-              "single_select",
-              "multi_select",
-              "text",
-              "number",
-              "date",
-              "phone",
-              "email",
-              "state_select",
-              "contact_form"
-            ]
+            "type": "string"
           },
           "question": {
             "type": "string"
@@ -74,26 +63,7 @@
           "options": {
             "type": "array",
             "items": {
-              "type": "object",
-              "properties": {
-                "label": {
-                  "type": "string"
-                },
-                "value": {
-                  "type": "string"
-                },
-                "icon": {
-                  "type": "string"
-                },
-                "dq_flag": {
-                  "type": "string",
-                  "enum": [
-                    "none",
-                    "soft_dq",
-                    "hard_dq"
-                  ]
-                }
-              }
+              "type": "object"
             }
           },
           "required": {
@@ -270,6 +240,38 @@
     "version": {
       "type": "number",
       "default": 1
+    },
+    "version_history": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "number"
+          },
+          "published_at": {
+            "type": "string"
+          },
+          "published_by": {
+            "type": "string"
+          },
+          "tag": {
+            "type": "string"
+          },
+          "nodes_snapshot": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "edges_snapshot": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        }
+      }
     },
     "published_at": {
       "type": "string",

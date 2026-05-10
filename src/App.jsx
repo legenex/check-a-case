@@ -39,6 +39,7 @@ const AdvancedBuilder     = lazy(() => import('@/pages/admin/AdvancedBuilder'));
 const CustomFields    = lazy(() => import('@/pages/admin/CustomFields'));
 const QuizzesRedirect = lazy(() => import('@/pages/admin/QuizzesRedirect'));
 const ContactFormsAdmin = lazy(() => import('@/pages/admin/ContactForms'));
+const DecisionTreeAnalytics = lazy(() => import('@/pages/admin/DecisionTreeAnalytics'));
 
 // ── Lazily loaded: public quiz runtime ────────────────────────────────────────
 const QuizRunner = lazy(() => import('@/pages/QuizRunner'));
@@ -141,6 +142,7 @@ const AuthenticatedApp = () => {
           <Route path="decision-trees" element={<DecisionTrees />} />
           <Route path="decision-trees/:quizId/edit" element={<DecisionTreeBuilder />} />
           <Route path="decision-trees/:quizId/advanced" element={<AdvancedBuilder />} />
+          <Route path="decision-trees/:quizId/analytics" element={<DecisionTreeAnalytics />} />
           <Route path="custom-fields" element={<CustomFields />} />
           <Route path="chatbot" element={<AdminPlaceholder />} />
           <Route path="integrations" element={<Integrations />} />

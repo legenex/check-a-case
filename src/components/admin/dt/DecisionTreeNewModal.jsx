@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { X } from "lucide-react";
+import { X, Copy } from "lucide-react";
 import AIWizard from "./AIWizard";
 
 const TABS = ["Start from Blank", "Start from Template", "Generate with AI"];
@@ -12,6 +12,37 @@ export default function DecisionTreeNewModal({ onClose, onCreated }) {
   const [slug, setSlug] = useState("");
   const [builderMode, setBuilderMode] = useState("basic");
   const [campaignType, setCampaignType] = useState("mva");
+
+  const { data: templates = [] } = useQuery({
+    queryKey: ["quiz-templates"],
+    queryFn: () => base44.entities.Quiz.filter({ is_template: true }, "-updated_date", 50),
+  });
+
+  const cloneTemplateMut = useMutation({
+    mutationFn: async (template) => {
+      const newSlug = template.slug.replace(/-template$/, "") + "-" + Date.now().toString(36);
+      const newQuiz = await base44.entities.Quiz.create({
+        ...template,
+        id: undefined,
+        title: template.title.replace(" Template", "") + " (Copy)",
+        slug: newSlug,
+        status: "draft",
+        is_template: false,
+        total_starts: 0, total_completes: 0, total_qualified: 0, total_disqualified: 0,
+        published_at: null,
+      });
+      const questions = await base44.entities.Question.filter({ quiz_id: template.id });
+      const edges = await base44.entities.Edge.filter({ quiz_id: template.id });
+      for (const q of questions) {
+        await base44.entities.Question.create({ ...q, id: undefined, quiz_id: newQuiz.id, node_id: crypto.randomUUID() });
+      }
+      for (const e of edges) {
+        await base44.entities.Edge.create({ ...e, id: undefined, quiz_id: newQuiz.id, edge_id: crypto.randomUUID() });
+      }
+      return newQuiz;
+    },
+    onSuccess: (quiz) => onCreated(quiz.id),
+  });
 
   const createMut = useMutation({
     mutationFn: async () => {
@@ -142,10 +173,32 @@ export default function DecisionTreeNewModal({ onClose, onCreated }) {
         )}
 
         {tab === 1 && (
-          <div className="py-8 text-center text-muted-foreground">
-            <p className="text-4xl mb-4">📋</p>
-            <p className="font-medium">No templates yet</p>
-            <p className="text-sm mt-1">Mark any decision tree as a template to find it here.</p>
+          <div className="py-2 max-h-[60vh] overflow-y-auto">
+            {templates.length === 0 ? (
+              <div className="py-8 text-center text-muted-foreground">
+                <p className="text-4xl mb-4">📋</p>
+                <p className="font-medium">No templates yet</p>
+                <p className="text-sm mt-1">Click the bookmark icon on any tree to save it as a template.</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {templates.map(t => (
+                  <div key={t.id} className="flex items-center justify-between gap-3 p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-foreground truncate">{t.title}</p>
+                      <p className="text-xs text-muted-foreground">{t.campaign_type} - {t.total_nodes || 0} nodes</p>
+                    </div>
+                    <button
+                      onClick={() => cloneTemplateMut.mutate(t)}
+                      disabled={cloneTemplateMut.isPending}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold disabled:opacity-50 hover:bg-primary/90 transition-colors flex-shrink-0">
+                      <Copy className="w-3 h-3" />
+                      {cloneTemplateMut.isPending ? "Cloning..." : "Use Template"}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
