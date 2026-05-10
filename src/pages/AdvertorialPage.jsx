@@ -213,65 +213,68 @@ export default function AdvertorialPage() {
       {/* Spacer for fixed navbar */}
       <div className="h-20" />
 
-      {/* Hero image — full bleed within 5xl */}
-      {adv.hero_image_url && (
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-8">
-          <div className="aspect-[16/9] rounded-2xl overflow-hidden shadow-xl shadow-black/10">
-            <img src={adv.hero_image_url} alt={adv.title} className="w-full h-full object-cover" />
+      <article className="pb-16">
+        {/* Header block — max-w-3xl */}
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-10">
+          {/* Eyebrow */}
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-4">
+            <span className="text-primary">{adv.campaign_id || "Legal Alert"}</span>
+            <span>·</span>
+            <Clock className="w-3 h-3" />
+            <span>{readTime} min read</span>
+            <span>·</span>
+            <Calendar className="w-3 h-3" />
+            <span>{publishDate}</span>
+          </div>
+
+          {/* Headline */}
+          <h1 style={{ fontSize: "clamp(2rem, 5vw, 3.25rem)", fontWeight: 800, lineHeight: 1.1, letterSpacing: "-0.03em", color: "#111" }} className="mb-5">
+            {adv.title}
+          </h1>
+
+          {/* Pull quote / dek */}
+          {adv.pull_quote && (
+            <p className="text-xl italic text-foreground/65 mb-6 leading-relaxed" style={{ fontFamily: "Georgia, serif" }}>
+              {adv.pull_quote}
+            </p>
+          )}
+
+          {/* Byline */}
+          <div className="flex items-center justify-between flex-wrap gap-4 mb-6 pb-6 border-b border-border">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-brand-blue-dark flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+                SM
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-foreground">By {authorName}</p>
+                <p className="text-xs text-muted-foreground">Reviewed by an attorney · CheckACase Editorial</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button className="w-8 h-8 rounded-full bg-[#1877f2] flex items-center justify-center text-white hover:opacity-80 transition-opacity" title="Share on Facebook">
+                <Facebook className="w-3.5 h-3.5" />
+              </button>
+              <button className="w-8 h-8 rounded-full bg-[#1da1f2] flex items-center justify-center text-white hover:opacity-80 transition-opacity" title="Share on Twitter">
+                <Twitter className="w-3.5 h-3.5" />
+              </button>
+              <button className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:bg-border transition-colors" title="Copy link">
+                <LinkIcon className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
         </div>
-      )}
 
-      <article className={`max-w-3xl mx-auto px-4 sm:px-6 ${adv.hero_image_url ? "pt-8" : "pt-12"} pb-16`}>
-
-        {/* Eyebrow */}
-        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-4">
-          <span className="text-primary">{adv.campaign_id || "Legal Alert"}</span>
-          <span>·</span>
-          <Clock className="w-3 h-3" />
-          <span>{readTime} min read</span>
-          <span>·</span>
-          <Calendar className="w-3 h-3" />
-          <span>{publishDate}</span>
-        </div>
-
-        {/* Headline */}
-        <h1 style={{ fontSize: "clamp(2rem, 5vw, 3.25rem)", fontWeight: 800, lineHeight: 1.1, letterSpacing: "-0.03em", color: "#111" }} className="mb-5">
-          {adv.title}
-        </h1>
-
-        {/* Pull quote */}
-        {adv.pull_quote && (
-          <p className="text-xl italic text-foreground/65 mb-6 leading-relaxed" style={{ fontFamily: "Georgia, serif" }}>
-            {adv.pull_quote}
-          </p>
+        {/* Hero image — full-bleed max-w-5xl, AFTER byline */}
+        {adv.hero_image_url && (
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 mb-8">
+            <div className="aspect-[16/9] rounded-2xl overflow-hidden shadow-xl shadow-black/10">
+              <img src={adv.hero_image_url} alt={adv.title} className="w-full h-full object-cover" />
+            </div>
+          </div>
         )}
 
-        {/* Byline */}
-        <div className="flex items-center justify-between flex-wrap gap-4 mb-8 pb-8 border-b border-border">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-brand-blue-dark flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
-              SM
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-foreground">By {authorName}</p>
-              <p className="text-xs text-muted-foreground">Reviewed by an attorney · CheckACase Editorial</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button className="w-8 h-8 rounded-full bg-[#1877f2] flex items-center justify-center text-white hover:opacity-80 transition-opacity" title="Share on Facebook">
-              <Facebook className="w-3.5 h-3.5" />
-            </button>
-            <button className="w-8 h-8 rounded-full bg-[#1da1f2] flex items-center justify-center text-white hover:opacity-80 transition-opacity" title="Share on Twitter">
-              <Twitter className="w-3.5 h-3.5" />
-            </button>
-            <button className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:bg-border transition-colors" title="Copy link">
-              <LinkIcon className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
-
-        {/* Body */}
+        {/* Body — max-w-3xl */}
+        <div className="max-w-3xl mx-auto px-4 sm:px-6">
         <AdvBody body={adv.body || ""} adv={adv} slug={adv.slug} ctaHref={ctaHref} />
 
         {/* Final CTA block */}
@@ -282,6 +285,7 @@ export default function AdvertorialPage() {
           <p><strong>DISCLAIMER:</strong> checkacase.com is not a law firm or an attorney referral service. This advertisement is not legal advice and is not a guarantee or prediction of the outcome of your legal matter. Every case is different, and the outcome depends on the laws, facts, and circumstances unique to each case. Hiring an attorney is an important decision that should not be based solely on advertising. Request free information about your attorney's background and experience.</p>
           <p><strong>CA RESIDENTS:</strong> Paid attorney advertising on behalf of jointly advertising independent attorneys. CheckACase is not a law firm and does not provide legal services. You can request an attorney by name. This advertising does not imply a higher quality of legal services than that provided by other attorneys, nor does it imply that the attorneys are certified specialists or experts in any area of law. Past results showcased in advertisements do not dictate future results. If you live in AL, FL, MO, NY, or WY, additional state-specific advertising disclosures apply.</p>
         </div>
+        </div>{/* end max-w-3xl body wrapper */}
       </article>
 
       <MinimalLegalFooter />

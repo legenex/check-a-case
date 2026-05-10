@@ -1,10 +1,12 @@
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
+
+import TaboolaPixel from '@/components/tracking/TaboolaPixel';
 
 // Public pages
 import Home from '@/pages/Home';
@@ -117,11 +119,18 @@ const AuthenticatedApp = () => {
   );
 };
 
+function PublicPixels() {
+  const location = useLocation();
+  if (location.pathname.startsWith("/admin")) return null;
+  return <TaboolaPixel />;
+}
+
 function App() {
   return (
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
         <Router>
+          <PublicPixels />
           <AuthenticatedApp />
         </Router>
         <Toaster />
