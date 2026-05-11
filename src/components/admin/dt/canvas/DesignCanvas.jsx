@@ -34,6 +34,25 @@ export default function DesignCanvas({
   const [pendingConnect, setPendingConnect] = useState(null);
   const [lastScreenCursor, setLastScreenCursor] = useState({ x: 0, y: 0 });
 
+  // Clear ghost path when pendingConnect clears
+  useEffect(() => {
+    if (!pendingConnect && ghostPathRef.current) {
+      ghostPathRef.current.setAttribute("d", "");
+    }
+  }, [pendingConnect]);
+
+  // Escape key to cancel pending connection
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === "Escape" && pendingConnect) {
+        setPendingConnect(null);
+        if (ghostPathRef.current) ghostPathRef.current.setAttribute("d", "");
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [pendingConnect]);
+
   const dragRef = useRef(null);
   const panRef = useRef(null);
   const marqueeRef = useRef(null);
@@ -134,6 +153,12 @@ export default function DesignCanvas({
 
   // Canvas pointer events
   const onBgPointerDown = useCallback((e) => {
+    // Clear pending connection on any canvas click
+    if (pendingConnect) {
+      setPendingConnect(null);
+      if (ghostPathRef.current) ghostPathRef.current.setAttribute("d", "");
+      return;
+    }
     if (e.target.closest("[data-handle]") || e.target.closest("[data-no-drag]")) return;
     const rect = wrapRef.current.getBoundingClientRect();
 
@@ -196,7 +221,7 @@ export default function DesignCanvas({
     const rect = wrapRef.current?.getBoundingClientRect();
     if (!rect) return;
 
-    setLastScreenCursor({ x: e.clientX, y: e.clientY });
+    setLastScreenCursor({ x: e.clientX - rect.left, y: e.clientY - rect.top });
 
     if (panRef.current) {
       const dx = e.clientX - panRef.current.startX;
@@ -256,6 +281,7 @@ export default function DesignCanvas({
     if (pendingConnect && pendingConnect.sourceId === sourceId && pendingConnect.sourceHandle === sourceHandle) {
       // Clicking the same armed handle cancels
       setPendingConnect(null);
+      if (ghostPathRef.current) ghostPathRef.current.setAttribute("d", "");
       return;
     }
     setPendingConnect({ sourceId, sourceHandle, color, sourceWorldX: w.x, sourceWorldY: w.y });
@@ -267,6 +293,7 @@ export default function DesignCanvas({
     if (pendingConnect.sourceId === targetId) {
       // No self-connection
       setPendingConnect(null);
+      if (ghostPathRef.current) ghostPathRef.current.setAttribute("d", "");
       return;
     }
     onConnect({ source: pendingConnect.sourceId, sourceHandle: pendingConnect.sourceHandle, target: targetId });
@@ -300,7 +327,11 @@ export default function DesignCanvas({
     const up = (ev) => {
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", up);
-      if (!moved) { setPendingConnect(null); return; }
+      if (!moved) {
+        setPendingConnect(null);
+        if (ghostPathRef.current) ghostPathRef.current.setAttribute("d", "");
+        return;
+      }
       const elTarget = document.elementFromPoint(ev.clientX, ev.clientY);
       const inputEl = elTarget && elTarget.closest("[data-handle-input]");
       if (inputEl) {

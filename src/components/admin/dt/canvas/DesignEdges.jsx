@@ -62,6 +62,7 @@ export default function DesignEdges({
   hoverEdgeId, setHoverEdgeId,
   ghostEdge,
 }) {
+  // Recompute nodeMap whenever nodes array reference changes (on position updates)
   const nodeMap = useMemo(() => Object.fromEntries(nodes.map((n) => [n.id, n])), [nodes]);
 
   return (

@@ -270,7 +270,7 @@ export default function AdvancedBuilder() {
     if (!loadingQ && !loadingE && quiz) {
       setTitleVal(quiz.title || "");
       
-      // One-time data-integrity sweep: remove duplicate Question rows
+      // One-time data-integrity sweep: remove duplicate Question rows and orphan Edge rows
       (async () => {
         try {
           const allQuestions = await base44.entities.Question.filter({ quiz_id: quizId }, null, 1000);
@@ -286,6 +286,17 @@ export default function AdvancedBuilder() {
           if (duplicates.length > 0) {
             await Promise.all(duplicates.map((d) => base44.entities.Question.delete(d.id)));
             console.log(`Cleaned up ${duplicates.length} duplicate Question rows.`);
+          }
+
+          // Clean up orphan Edge rows
+          const allEdges = await base44.entities.Edge.filter({ quiz_id: quizId }, null, 1000);
+          const nodeIds = new Set(allQuestions.map((q) => q.node_id));
+          const orphans = allEdges.filter((e) =>
+            !nodeIds.has(e.source_node_id) || !nodeIds.has(e.target_node_id)
+          );
+          if (orphans.length > 0) {
+            await Promise.all(orphans.map((o) => base44.entities.Edge.delete(o.id)));
+            console.log(`Cleaned up ${orphans.length} orphan Edge rows.`);
           }
         } catch (err) {
           console.error("Data integrity check failed:", err);
@@ -440,6 +451,7 @@ export default function AdvancedBuilder() {
   // ── Node operations ───────────────────────────────────────────────────────────
 
   // Direct position set (from DesignCanvas drag)
+  // Returns a NEW array reference so nodeMap useMemo recomputes
   const onMoveNode = useCallback((nodeId, pos) => {
     setNodes((prev) => {
       const updated = prev.map((n) => n.id === nodeId ? { ...n, position: pos } : n);
@@ -482,10 +494,11 @@ export default function AdvancedBuilder() {
   }, [mutate]);
 
   const onNodeDelete = useCallback((nodeId) => {
-    mutate((ns, es) => [
-      ns.filter((n) => n.id !== nodeId),
-      es.filter((e) => e.source !== nodeId && e.target !== nodeId),
-    ]);
+    mutate((ns, es) => {
+      const newNodes = ns.filter((n) => n.id !== nodeId);
+      const newEdges = es.filter((e) => e.source !== nodeId && e.target !== nodeId);
+      return [newNodes, newEdges];
+    });
     setSelection((s) => s.filter((id) => id !== nodeId));
   }, [mutate]);
 
@@ -715,6 +728,10 @@ export default function AdvancedBuilder() {
   const testTraversedNodes = [];
   const testNodeId = null;
 
+  // Filter out orphan edges (edges referencing missing nodes)
+  const nodeIds = new Set(nodes.map((n) => n.id));
+  const renderEdges = edges.filter((e) => nodeIds.has(e.source) && nodeIds.has(e.target));
+
   // Template handler
   const onUseTemplate = async (tpl) => {
     try {
@@ -943,7 +960,7 @@ export default function AdvancedBuilder() {
           {/* CANVAS */}
           <DesignCanvas
             nodes={nodes}
-            edges={edges}
+            edges={renderEdges}
             selection={selection}
             isLight={!isDark}
             testNodeId={testNodeId}
@@ -979,7 +996,7 @@ export default function AdvancedBuilder() {
           {showValidation && (
             <ValidationPopover
               nodes={nodes}
-              edges={edges}
+              edges={renderEdges}
               isDark={isDark}
               onJumpToNode={jumpToNode}
               onClose={() => setShowValidation(false)}
