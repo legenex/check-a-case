@@ -62,8 +62,8 @@ export default function DesignEdges({
   hoverEdgeId, setHoverEdgeId,
   ghostEdge,
 }) {
-  // Recompute nodeMap whenever nodes array reference changes (on position updates)
-  const nodeMap = useMemo(() => Object.fromEntries(nodes.map((n) => [n.id, n])), [nodes]);
+  // No memo: recompute nodeMap on every render. Cheap (<500 nodes) and avoids a class of bugs.
+  const nodeMap = Object.fromEntries(nodes.map((n) => [n.id, n]));
 
   return (
     <svg

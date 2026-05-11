@@ -47,6 +47,7 @@ function questionsToNodes(questions) {
 }
 
 function edgesToInternal(edges) {
+  // Strip cached coordinates (sourceX/Y/targetX/Y); always compute from node positions
   return edges.map((e) => ({
     id: e.edge_id || e.id,
     source: e.source_node_id,
@@ -57,6 +58,7 @@ function edgesToInternal(edges) {
     animated: e.animated || false,
     style_color: e.style_color || "#94a3b8",
     _dbId: e.id,
+    // explicitly NOT copying sourceX, sourceY, targetX, targetY
   }));
 }
 
@@ -298,6 +300,23 @@ export default function AdvancedBuilder() {
             await Promise.all(orphans.map((o) => base44.entities.Edge.delete(o.id)));
             console.log(`Cleaned up ${orphans.length} orphan Edge rows.`);
           }
+
+          // De-duplicate edges: keep last write, remove duplicates by source+sourceHandle+target
+          const byKey = new Map();
+          const edgeDuplicates = [];
+          for (const e of allEdges) {
+            if (orphans.some((o) => o.id === e.id)) continue; // Skip already-deleted orphans
+            const key = `${e.source_node_id}|${e.source_handle}|${e.target_node_id}`;
+            if (byKey.has(key)) {
+              edgeDuplicates.push(e);
+            } else {
+              byKey.set(key, e);
+            }
+          }
+          if (edgeDuplicates.length > 0) {
+            await Promise.all(edgeDuplicates.map((d) => base44.entities.Edge.delete(d.id)));
+            console.log(`Cleaned up ${edgeDuplicates.length} duplicate Edge rows.`);
+          }
         } catch (err) {
           console.error("Data integrity check failed:", err);
         }
@@ -451,10 +470,16 @@ export default function AdvancedBuilder() {
   // ── Node operations ───────────────────────────────────────────────────────────
 
   // Direct position set (from DesignCanvas drag)
-  // Returns a NEW array reference so nodeMap useMemo recomputes
+  // CRITICAL: returns NEW node with NEW position object (no in-place mutation)
+  // This ensures nodeMap recomputes from fresh data
   const onMoveNode = useCallback((nodeId, pos) => {
     setNodes((prev) => {
-      const updated = prev.map((n) => n.id === nodeId ? { ...n, position: pos } : n);
+      // Map returns new array; match returns new node with new position object
+      const updated = prev.map((n) =>
+        n.id === nodeId
+          ? { ...n, position: { x: pos.x, y: pos.y } }  // new position object
+          : n
+      );
       bumpSave(updated, edgesRef.current);
       return updated;
     });
@@ -728,9 +753,19 @@ export default function AdvancedBuilder() {
   const testTraversedNodes = [];
   const testNodeId = null;
 
-  // Filter out orphan edges (edges referencing missing nodes)
-  const nodeIds = new Set(nodes.map((n) => n.id));
-  const renderEdges = edges.filter((e) => nodeIds.has(e.source) && nodeIds.has(e.target));
+  // Render edges: filter orphans AND de-duplicate by source+sourceHandle+target
+  const renderEdges = (() => {
+    const nodeIds = new Set(nodes.map((n) => n.id));
+    const seen = new Map();
+    for (const e of edges) {
+      // Drop orphans (edges referencing missing nodes)
+      if (!nodeIds.has(e.source) || !nodeIds.has(e.target)) continue;
+      // Drop duplicates: last write wins by key
+      const key = `${e.source}|${e.sourceHandle || "next"}|${e.target}`;
+      seen.set(key, e);
+    }
+    return Array.from(seen.values());
+  })();
 
   // Template handler
   const onUseTemplate = async (tpl) => {
