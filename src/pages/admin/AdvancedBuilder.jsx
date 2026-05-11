@@ -508,6 +508,15 @@ export default function AdvancedBuilder() {
   }, [mutate]);
 
   const onConnect = useCallback((connection) => {
+    // Prevent multiple edges from same output handle
+    const existingEdge = edgesRef.current.find(
+      (e) => e.source === connection.source && (e.sourceHandle || "next") === (connection.sourceHandle || "next")
+    );
+    if (existingEdge) {
+      showToast("Output already connected. Delete the existing connection first.");
+      return;
+    }
+    
     const edgeId = crypto.randomUUID();
     mutate((ns, es) => [ns, [...es, {
       id: edgeId,
