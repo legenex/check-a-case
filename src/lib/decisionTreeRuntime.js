@@ -56,71 +56,180 @@ export function getNextNodeAfterAnswer(nodeId, selectedOptionId, adjacency) {
 }
 
 /**
- * Evaluate a decision_node config's rules against fieldValues and tags.
- * Returns the target_node_id of the first matching rule, or config.else_target_node_id.
+ * Evaluate a decision_node config. Returns target_node_id string (back-compat signature).
+ * New code should use evaluateDecisionNodeFull for side effects and matched path info.
  */
 export function evaluateDecisionNode(nodeConfig, fieldValues, tags) {
-  const rules = nodeConfig.rules || [];
-  for (const rule of rules) {
-    if (!rule.condition_expression) continue;
-    try {
-      const result = evalExpression(rule.condition_expression, fieldValues, tags);
-      if (result) return rule.target_node_id;
-    } catch (err) {
-      console.warn('Rule eval error:', err.message);
-    }
-  }
-  return nodeConfig.else_target_node_id || null;
+  return evaluateDecisionNodeFull(nodeConfig, fieldValues, tags).target_node_id;
 }
 
 /**
- * Safe expression evaluator. Only allows field lookups, tag checks, and basic comparisons.
+ * Full evaluator. Returns { target_node_id, matched_path_ids, side_effects }.
+ *
+ * Reads the NEW structured format (paths[]) produced by DecisionNodeEditor.
+ * Falls back to legacy rules[] with string condition_expression if paths is empty.
+ *
+ * Sentinel '__USE_PATH_ELSE_EDGE__' means: look up the outgoing edge with
+ * source_handle === 'path-else' in the canvas adjacency map.
  */
-function evalExpression(expr, fieldValues, tags) {
-  const FORBIDDEN_PATTERNS = ['function', 'Function', 'eval', '__proto__', 'constructor', '=>', '`'];
-  if (FORBIDDEN_PATTERNS.some((p) => expr.includes(p))) {
-    throw new Error('Forbidden expression pattern');
+export function evaluateDecisionNodeFull(nodeConfig, fieldValues, tags) {
+  const paths = Array.isArray(nodeConfig?.paths) ? nodeConfig.paths : [];
+  const legacyRules = Array.isArray(nodeConfig?.rules) ? nodeConfig.rules : [];
+  const evaluateAll = !!nodeConfig?.evaluate_all_paths;
+  const fallthrough = nodeConfig?.fallthrough_on_no_match !== false;
+  const applySideEffects = nodeConfig?.apply_side_effects !== false;
+
+  const sideEffects = { tags_to_add: [], tags_to_remove: [], field_assignments: [] };
+  const matchedPaths = [];
+
+  // 1) New-format paths[]
+  for (const path of paths) {
+    if (!path) continue;
+    let matched = false;
+    try {
+      matched = evaluateConditionGroup(path.conditions, fieldValues, tags);
+    } catch (err) {
+      console.warn('Path evaluation error:', err?.message, 'path', path.path_id);
+    }
+    if (matched) {
+      matchedPaths.push(path);
+      if (applySideEffects) {
+        if (Array.isArray(path.tags_to_add)) sideEffects.tags_to_add.push(...path.tags_to_add);
+        if (Array.isArray(path.tags_to_remove)) sideEffects.tags_to_remove.push(...path.tags_to_remove);
+        if (Array.isArray(path.custom_field_assignments)) sideEffects.field_assignments.push(...path.custom_field_assignments);
+      }
+      if (!evaluateAll) break;
+    }
   }
 
-  // Replace fields.xxx with actual values
-  let processed = expr.replace(/fields\.(\w+)/g, (_, key) => {
-    const val = fieldValues[key];
-    if (val === undefined || val === null) return 'null';
-    if (typeof val === 'string') return `"${val.replace(/"/g, '\\"')}"`;
-    return String(val);
-  });
-
-  // Replace tags.has('xxx') with boolean
-  processed = processed.replace(/tags\.has\(['"]([^'"]+)['"]\)/g, (_, tag) => {
-    return tags?.includes?.(tag) ? 'true' : 'false';
-  });
-
-  // Allow includes(arr, val)
-  processed = processed.replace(/includes\(([^,]+),\s*(['"][^'"]+['"])\)/g, (_, arr, val) => {
-    const arrStr = arr.trim();
-    const fieldMatch = arrStr.match(/^fields\.(\w+)$/);
-    if (fieldMatch) {
-      const arrVal = fieldValues[fieldMatch[1]];
-      if (Array.isArray(arrVal)) {
-        const checkVal = val.replace(/['"]/g, '');
-        return arrVal.includes(checkVal) ? 'true' : 'false';
+  // 2) Legacy rules[] fallback
+  if (paths.length === 0 && legacyRules.length > 0) {
+    for (const rule of legacyRules) {
+      try {
+        if (rule?.condition_expression && legacyEvalExpression(rule.condition_expression, fieldValues, tags)) {
+          return { target_node_id: rule.target_node_id || null, matched_path_ids: [], side_effects: sideEffects };
+        }
+      } catch (err) {
+        console.warn('Legacy rule eval error:', err?.message);
       }
     }
-    return 'false';
-  });
-
-  // Only allow safe tokens: numbers, strings, booleans, null, operators
-  const safePattern = /^[\s\d"'null|&!<>=+\-.*?:()truefalse,]+$/;
-  if (!safePattern.test(processed.replace(/[a-zA-Z_]\w*/g, (m) => {
-    if (['true', 'false', 'null', 'undefined', 'and', 'or', 'not'].includes(m)) return m;
-    return '"__UNSAFE__"';
-  }))) {
-    // Fallback: just try it
+    return { target_node_id: nodeConfig?.else_target_node_id || null, matched_path_ids: [], side_effects: sideEffects };
   }
 
-  // Use Function constructor in a restricted way
-  const fn = new Function(`return (${processed});`);
-  return fn();
+  // 3) Matched
+  if (matchedPaths.length > 0) {
+    return {
+      target_node_id: matchedPaths[0].target_node_id || null,
+      matched_path_ids: matchedPaths.map((p) => p.path_id),
+      side_effects: sideEffects,
+    };
+  }
+
+  // 4) No match - sentinel for else edge
+  if (fallthrough) {
+    return { target_node_id: '__USE_PATH_ELSE_EDGE__', matched_path_ids: [], side_effects: sideEffects };
+  }
+
+  return { target_node_id: null, matched_path_ids: [], side_effects: sideEffects };
+}
+
+/**
+ * Evaluate a ConditionGroup recursively.
+ * group: { logic: 'AND' | 'OR', conditions: [Condition | ConditionGroup] }
+ */
+export function evaluateConditionGroup(group, fieldValues, tags) {
+  if (!group || !Array.isArray(group.conditions) || group.conditions.length === 0) return false;
+  const logic = group.logic === 'OR' ? 'OR' : 'AND';
+  const results = group.conditions.map((item) => {
+    if (item && item.logic && Array.isArray(item.conditions)) {
+      return evaluateConditionGroup(item, fieldValues, tags);
+    }
+    return evaluateCondition(item, fieldValues, tags);
+  });
+  return logic === 'OR' ? results.some(Boolean) : results.every(Boolean);
+}
+
+/**
+ * Evaluate a single Condition: { field, operator, value } or { field_key, operator, value }.
+ */
+export function evaluateCondition(c, fieldValues, tags) {
+  if (!c) return false;
+  const fieldKey = c.field_key || c.field;
+  const op = (c.operator || '').toString();
+  const value = c.value;
+
+  const tagSet = tags instanceof Set ? tags : new Set(Array.isArray(tags) ? tags : []);
+  const fv = fieldValues || {};
+  const raw = fieldKey === '__tags' ? Array.from(tagSet) : fv[fieldKey];
+
+  const toNum = (v) => (v === null || v === undefined || v === '' ? NaN : Number(v));
+  const toStr = (v) => (v === null || v === undefined ? '' : String(v));
+  const toArr = (v) => (Array.isArray(v) ? v : (v === null || v === undefined ? [] : [v]));
+
+  switch (op) {
+    case 'eq': case 'equals': case '==':
+      return toStr(raw) === toStr(value);
+    case 'ne': case 'not_equals': case '!=':
+      return toStr(raw) !== toStr(value);
+    case 'gt': case '>':
+      return toNum(raw) > toNum(value);
+    case 'lt': case '<':
+      return toNum(raw) < toNum(value);
+    case 'gte': case '>=':
+      return toNum(raw) >= toNum(value);
+    case 'lte': case '<=':
+      return toNum(raw) <= toNum(value);
+    case 'in':
+      return toArr(value).map(toStr).includes(toStr(raw));
+    case 'not_in':
+      return !toArr(value).map(toStr).includes(toStr(raw));
+    case 'contains':
+      return toStr(raw).toLowerCase().includes(toStr(value).toLowerCase());
+    case 'not_contains':
+      return !toStr(raw).toLowerCase().includes(toStr(value).toLowerCase());
+    case 'starts_with':
+      return toStr(raw).toLowerCase().startsWith(toStr(value).toLowerCase());
+    case 'ends_with':
+      return toStr(raw).toLowerCase().endsWith(toStr(value).toLowerCase());
+    case 'is_empty':
+      if (raw === null || raw === undefined) return true;
+      if (Array.isArray(raw)) return raw.length === 0;
+      return toStr(raw).trim() === '';
+    case 'is_not_empty':
+      if (raw === null || raw === undefined) return false;
+      if (Array.isArray(raw)) return raw.length > 0;
+      return toStr(raw).trim() !== '';
+    case 'has_tag':
+      return tagSet.has(toStr(value));
+    case 'not_has_tag':
+      return !tagSet.has(toStr(value));
+    case 'matches_regex': {
+      try { return new RegExp(toStr(value)).test(toStr(raw)); } catch { return false; }
+    }
+    default:
+      console.warn('Unknown operator:', op);
+      return false;
+  }
+}
+
+/**
+ * Legacy string-expression evaluator. Only used as fallback for old rules[] nodes.
+ */
+function legacyEvalExpression(expr, fieldValues, tags) {
+  const FORBIDDEN = ['function', 'Function', 'eval', '__proto__', 'constructor', '=>', '`'];
+  if (FORBIDDEN.some((p) => expr.includes(p))) throw new Error('Forbidden expression pattern');
+  const tagArr = tags instanceof Set ? Array.from(tags) : (Array.isArray(tags) ? tags : []);
+  let processed = expr.replace(/fields\.(\w+)/g, (_, key) => {
+    const val = (fieldValues || {})[key];
+    if (val === undefined || val === null) return 'null';
+    if (typeof val === 'string') return JSON.stringify(val);
+    return String(val);
+  });
+  processed = processed.replace(/tags\.has\((['"])([^'"]+)\1\)/g, (_, _q, tag) =>
+    tagArr.includes(tag) ? 'true' : 'false'
+  );
+  if (!/^[\s\d"'.\w|&!<>=+\-*?:(),[\]]+$/.test(processed)) return false;
+  try { return new Function(`"use strict"; return (${processed});`)(); } catch { return false; }
 }
 
 /** Content-bearing node types (for progress bar calculation). */

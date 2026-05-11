@@ -176,25 +176,120 @@ export function ChipInput({ value = [], onChange, placeholder = "Add tag..." }) 
   );
 }
 
+const OPERATORS = [
+  { value: "eq",           label: "equals" },
+  { value: "ne",           label: "does not equal" },
+  { value: "gt",           label: "greater than" },
+  { value: "lt",           label: "less than" },
+  { value: "gte",          label: ">= (gte)" },
+  { value: "lte",          label: "<= (lte)" },
+  { value: "in",           label: "is one of" },
+  { value: "not_in",       label: "is not one of" },
+  { value: "contains",     label: "contains" },
+  { value: "not_contains", label: "does not contain" },
+  { value: "starts_with",  label: "starts with" },
+  { value: "ends_with",    label: "ends with" },
+  { value: "is_empty",     label: "is empty" },
+  { value: "is_not_empty", label: "is not empty" },
+  { value: "has_tag",      label: "has tag" },
+  { value: "not_has_tag",  label: "does not have tag" },
+  { value: "matches_regex",label: "matches regex" },
+];
+
+const NO_VALUE_OPS = new Set(["is_empty", "is_not_empty"]);
+const CHIP_OPS     = new Set(["in", "not_in", "has_tag", "not_has_tag"]);
+const TAG_OPS      = new Set(["has_tag", "not_has_tag"]);
+
 /** Condition builder for a single condition */
-function ConditionRow({ condition, onChange, onDelete }) {
-  const OPERATORS = [
-    "equals","not_equals","contains","not_contains","starts_with","ends_with",
-    "greater_than","less_than","is_empty","is_not_empty","has_tag","not_has_tag",
-  ];
+export function ConditionRow({ condition, onChange, onDelete, quizId }) {
+  const { data: fields = [] } = useQuery({
+    queryKey: ["custom-fields-picker", quizId],
+    queryFn: async () => {
+      const global = await base44.entities.CustomField.filter({ scope: "global" }, "display_label", 200);
+      const quizScoped = quizId
+        ? await base44.entities.CustomField.filter({ scope: "quiz", quiz_id: quizId }, "display_label", 50)
+        : [];
+      return [...global, ...quizScoped];
+    },
+    staleTime: 60000,
+  });
+
+  const op = condition.operator || "eq";
+  const isTagField = condition.field === "__tags" || TAG_OPS.has(op);
+
+  const handleFieldChange = (val) => {
+    const updates = { ...condition, field: val };
+    if (val === "__tags" && !TAG_OPS.has(op)) updates.operator = "has_tag";
+    onChange(updates);
+  };
+
+  const handleOpChange = (val) => {
+    const updates = { ...condition, operator: val };
+    if (TAG_OPS.has(val)) updates.field = "__tags";
+    onChange(updates);
+  };
+
+  // chip value is stored as comma-separated string for in/not_in, single string for tag ops
+  const chipValues = CHIP_OPS.has(op)
+    ? (Array.isArray(condition.value) ? condition.value : (condition.value ? String(condition.value).split(",").map(s => s.trim()).filter(Boolean) : []))
+    : [];
+
+  const handleChipChange = (arr) => {
+    onChange({ ...condition, value: TAG_OPS.has(op) ? (arr[0] || "") : arr });
+  };
+
   return (
-    <div className="flex items-center gap-2 flex-wrap">
-      <input value={condition.field || ""} onChange={(e) => onChange({ ...condition, field: e.target.value })}
-        placeholder="field_key" className="w-32 h-8 px-2 rounded border border-slate-200 bg-white text-xs font-mono" />
-      <select value={condition.operator || "equals"} onChange={(e) => onChange({ ...condition, operator: e.target.value })}
-        className="h-8 px-2 rounded border border-slate-200 bg-white text-xs">
-        {OPERATORS.map((op) => <option key={op} value={op}>{op}</option>)}
+    <div className="flex items-start gap-2 flex-wrap">
+      {/* Field selector */}
+      <select
+        value={isTagField ? "__tags" : (condition.field || "")}
+        onChange={(e) => handleFieldChange(e.target.value)}
+        className="w-36 h-8 px-2 rounded border border-slate-200 bg-white text-xs"
+      >
+        <option value="">-- field --</option>
+        <option value="__tags">Tags</option>
+        {fields.map((f) => (
+          <option key={f.id} value={f.field_key}>{f.display_label}</option>
+        ))}
       </select>
-      {!["is_empty","is_not_empty"].includes(condition.operator) && (
-        <input value={condition.value || ""} onChange={(e) => onChange({ ...condition, value: e.target.value })}
-          placeholder="value" className="flex-1 h-8 px-2 rounded border border-slate-200 bg-white text-xs min-w-[80px]" />
+
+      {/* Operator selector */}
+      <select
+        value={op}
+        onChange={(e) => handleOpChange(e.target.value)}
+        className="h-8 px-2 rounded border border-slate-200 bg-white text-xs"
+      >
+        {OPERATORS
+          .filter((o) => isTagField ? TAG_OPS.has(o.value) : true)
+          .map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+      </select>
+
+      {/* Value input */}
+      {!NO_VALUE_OPS.has(op) && (
+        CHIP_OPS.has(op) ? (
+          <div className="flex-1 min-w-[120px]">
+            <ChipInput
+              value={chipValues}
+              onChange={handleChipChange}
+              placeholder={TAG_OPS.has(op) ? "tag name..." : "add value..."}
+            />
+          </div>
+        ) : (
+          <div className="flex-1 min-w-[80px]">
+            <input
+              value={typeof condition.value === 'string' ? condition.value : (condition.value ?? "")}
+              onChange={(e) => onChange({ ...condition, value: e.target.value })}
+              placeholder={op === "matches_regex" ? "regex pattern" : "value"}
+              className="w-full h-8 px-2 rounded border border-slate-200 bg-white text-xs"
+            />
+            {op === "matches_regex" && (
+              <p className="text-[10px] text-slate-400 mt-0.5">JavaScript regex (without slashes)</p>
+            )}
+          </div>
+        )
       )}
-      <button type="button" onClick={onDelete} className="text-red-400 hover:text-red-600 flex-shrink-0">
+
+      <button type="button" onClick={onDelete} className="text-red-400 hover:text-red-600 flex-shrink-0 mt-1">
         <X size={13} />
       </button>
     </div>
@@ -202,7 +297,7 @@ function ConditionRow({ condition, onChange, onDelete }) {
 }
 
 /** Condition group with AND/OR logic */
-export function ConditionGroup({ value, onChange }) {
+export function ConditionGroup({ value, onChange, quizId }) {
   const group = value || { logic: "AND", conditions: [] };
   const conditions = group.conditions || [];
 
@@ -213,7 +308,7 @@ export function ConditionGroup({ value, onChange }) {
     onChange({ ...group, conditions: conditions.filter((_, i) => i !== idx) });
   };
   const addCondition = () => {
-    onChange({ ...group, conditions: [...conditions, { field: "", operator: "equals", value: "" }] });
+    onChange({ ...group, conditions: [...conditions, { field: "", operator: "eq", value: "" }] });
   };
   const toggleLogic = () => {
     onChange({ ...group, logic: group.logic === "AND" ? "OR" : "AND" });
@@ -233,7 +328,7 @@ export function ConditionGroup({ value, onChange }) {
         <span className="text-[10px] text-slate-400">Click to toggle AND / OR</span>
       </div>
       {conditions.map((c, idx) => (
-        <ConditionRow key={idx} condition={c}
+        <ConditionRow key={idx} condition={c} quizId={quizId}
           onChange={(updated) => updateCondition(idx, updated)}
           onDelete={() => deleteCondition(idx)} />
       ))}

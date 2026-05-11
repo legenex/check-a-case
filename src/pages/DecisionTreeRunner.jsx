@@ -5,7 +5,7 @@ import RuntimeShell from "@/components/runtime/RuntimeShell";
 import RuntimeProgressBar from "@/components/runtime/RuntimeProgressBar";
 import RuntimeNode from "@/components/runtime/RuntimeNode";
 import { resolveBrand, buildBrandCss } from "@/lib/resolveBrand";
-import { buildGraph, getNextNodeId, getNextNodeAfterAnswer, evaluateDecisionNode, getProgressRatio } from "@/lib/decisionTreeRuntime";
+import { buildGraph, getNextNodeId, getNextNodeAfterAnswer, evaluateDecisionNode, evaluateDecisionNodeFull, getProgressRatio } from "@/lib/decisionTreeRuntime";
 import { captureAttribution, getAttribution } from "@/lib/attribution";
 import { executeWebhookNode } from "@/functions/executeWebhookNode";
 import { sendNotificationSms } from "@/functions/sendNotificationSms";
@@ -272,8 +272,32 @@ export default function DecisionTreeRunner({ slug, previewMode, replayMode, repl
     }
 
     if (nodeType === 'decision_node') {
-      const targetId = evaluateDecisionNode(next.config || {}, currentFV, newTags);
-      await advanceToNode(targetId, currentFV, newTags, newPath);
+      const evalResult = evaluateDecisionNodeFull(next.config || {}, currentFV, newTags);
+
+      // Apply side effects from matched paths
+      const tagsSet = new Set(newTags);
+      if (evalResult.side_effects) {
+        for (const t of evalResult.side_effects.tags_to_add || []) tagsSet.add(t);
+        for (const t of evalResult.side_effects.tags_to_remove || []) tagsSet.delete(t);
+        for (const a of evalResult.side_effects.field_assignments || []) {
+          if (a?.field_key) currentFV[a.field_key] = a.value;
+        }
+        for (const pid of evalResult.matched_path_ids || []) {
+          const mp = (next.config?.paths || []).find((p) => p.path_id === pid);
+          if (mp?.title) {
+            tagsSet.add(`path:${mp.title.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '')}`);
+          }
+        }
+      }
+      const updatedTags = Array.from(tagsSet);
+
+      let targetId = evalResult.target_node_id;
+      if (targetId === '__USE_PATH_ELSE_EDGE__') {
+        const elseEdge = (adjacency[nextNodeId] || []).find((e) => e.source_handle === 'path-else');
+        targetId = elseEdge?.target_node_id || null;
+      }
+
+      await advanceToNode(targetId, currentFV, updatedTags, newPath);
       return;
     }
 
