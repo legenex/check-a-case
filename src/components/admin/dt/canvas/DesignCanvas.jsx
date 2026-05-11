@@ -27,6 +27,7 @@ export default function DesignCanvas({
   const ghostPathRef = useRef(null);
   const [viewport, setViewport] = useState({ x: 80, y: 80, zoom: 0.82 });
   const [spaceDown, setSpaceDown] = useState(false);
+  const [isPanning, setIsPanning] = useState(false);
   const [hoverEdgeId, setHoverEdgeId] = useState(null);
   const [quickAdd, setQuickAdd] = useState(null);
   const [marquee, setMarquee] = useState(null);
@@ -136,17 +137,58 @@ export default function DesignCanvas({
     if (e.target.closest("[data-handle]") || e.target.closest("[data-no-drag]")) return;
     const rect = wrapRef.current.getBoundingClientRect();
 
-    if (e.button === 1 || (e.button === 0 && spaceDown)) {
-      e.preventDefault();
-      panRef.current = { startX: e.clientX, startY: e.clientY, vpStart: { ...viewport } };
-      e.currentTarget.setPointerCapture(e.pointerId);
+    // Shift + left click = marquee select
+    if (e.button === 0 && e.shiftKey) {
+      const sx = e.clientX - rect.left;
+      const sy = e.clientY - rect.top;
+      const start = { x: sx, y: sy };
+      setMarquee({ x: sx, y: sy, w: 0, h: 0 });
+      onClearSelection();
+      const move = (ev) => {
+        const cx = ev.clientX - rect.left;
+        const cy = ev.clientY - rect.top;
+        setMarquee({
+          x: Math.min(start.x, cx),
+          y: Math.min(start.y, cy),
+          w: Math.abs(cx - start.x),
+          h: Math.abs(cy - start.y),
+        });
+      };
+      const up = () => {
+        window.removeEventListener("pointermove", move);
+        window.removeEventListener("pointerup", up);
+        setMarquee(null);
+      };
+      window.addEventListener("pointermove", move);
+      window.addEventListener("pointerup", up);
       return;
     }
-    if (e.button === 0) {
-      onClearSelection();
-      setQuickAdd(null);
-      marqueeRef.current = { startX: e.clientX - rect.left, startY: e.clientY - rect.top };
-      e.currentTarget.setPointerCapture(e.pointerId);
+
+    // Plain left click, middle mouse, or space+drag = pan
+    if (e.button === 0 || e.button === 1 || spaceDown) {
+      e.preventDefault();
+      setIsPanning(true);
+      const start = { x: e.clientX, y: e.clientY, vx: viewport.x, vy: viewport.y };
+      let panMoved = false;
+      const move = (ev) => {
+        const dx = ev.clientX - start.x;
+        const dy = ev.clientY - start.y;
+        if (!panMoved && (Math.abs(dx) > 3 || Math.abs(dy) > 3)) panMoved = true;
+        if (panMoved) {
+          setViewport(v => ({ ...v, x: start.vx + (ev.clientX - start.x), y: start.vy + (ev.clientY - start.y) }));
+        }
+      };
+      const up = () => {
+        window.removeEventListener("pointermove", move);
+        window.removeEventListener("pointerup", up);
+        setIsPanning(false);
+        if (!panMoved) {
+          onClearSelection();
+        }
+      };
+      window.addEventListener("pointermove", move);
+      window.addEventListener("pointerup", up);
+      return;
     }
   }, [spaceDown, viewport, onClearSelection]);
 
@@ -317,7 +359,7 @@ export default function DesignCanvas({
       ref={wrapRef}
       className="relative flex-1 overflow-hidden cc-canvas-wrap"
       style={{
-        cursor: spaceDown ? "grab" : "default",
+        cursor: isPanning ? "grabbing" : "grab",
         background: isLight ? "#f6f5f1" : "#0d0d11",
         backgroundImage: `radial-gradient(${isLight ? "rgba(15,23,42,0.08)" : "rgba(255,255,255,0.045)"} 1.2px, transparent 1.3px)`,
         backgroundSize: `${22 * zoom}px ${22 * zoom}px`,
@@ -415,8 +457,8 @@ export default function DesignCanvas({
         />
       )}
 
-      {/* Floating hint while connecting in click mode */}
-      {connectionMode === "click" && pendingConnect && (
+      {/* Floating hint while connecting */}
+      {pendingConnect && (
         <div className="fixed pointer-events-none rounded-md px-2 py-1 text-xs z-[60] shadow-lg"
              style={{
                left: lastScreenCursor.x + 16,
