@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { applyNodeChanges, applyEdgeChanges, addEdge, MarkerType } from "@xyflow/react";
-import { ArrowLeft, Eye, Save, CheckCircle2, Clock, ExternalLink, Zap, Sun, Moon, RotateCcw, RotateCw } from "lucide-react";
+import { ArrowLeft, Eye, Save, CheckCircle2, Clock, ExternalLink, Zap, Sun, Moon, RotateCcw, RotateCw, Bug } from "lucide-react";
 import { format } from "date-fns";
 import AdvancedCanvas, { bfsLayout } from "@/components/admin/dt/canvas/AdvancedCanvas";
 import PreviewModal from "@/components/admin/dt/PreviewModal";
@@ -92,6 +92,12 @@ export default function AdvancedBuilder() {
   const { quizId } = useParams();
   const navigate = useNavigate();
   const qc = useQueryClient();
+
+  const [debugMode, setDebugMode] = useState(() => localStorage.getItem("cac_dt_debug_mode") === "1");
+
+  useEffect(() => {
+    localStorage.setItem("cac_dt_debug_mode", debugMode ? "1" : "0");
+  }, [debugMode]);
 
   const [flowNodes, setFlowNodes] = useState([]);
   const [flowEdges, setFlowEdges] = useState([]);
@@ -507,6 +513,16 @@ export default function AdvancedBuilder() {
         </button>
         <button onClick={redo} title="Redo" className={`p-1.5 rounded transition-colors flex-shrink-0 ${isDarkMode ? "text-slate-400 hover:bg-slate-800" : "text-slate-500 hover:bg-slate-100"}`}>
           <RotateCw size={13} />
+        </button>
+
+        <button
+          onClick={() => setDebugMode((v) => !v)}
+          title="Debug mode"
+          className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors flex-shrink-0 ${
+            debugMode ? "bg-amber-500 text-white" : isDarkMode ? "bg-slate-800 text-slate-400 hover:bg-slate-700" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+          }`}
+        >
+          <Bug size={12} /> Debug
         </button>
 
         <div className="flex-1" />

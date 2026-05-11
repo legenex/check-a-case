@@ -2,6 +2,60 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { X, Trash2, ChevronLeft, ChevronRight, Save, CheckCircle2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import NodeInspectorPanel from "@/components/admin/dt/inspector/NodeInspectorPanel";
+import DecisionNodeEditor from "./DecisionNodeEditor";
+import WebhookEditor from "./WebhookEditor";
+import NotificationEditor from "./NotificationEditor";
+import FormNodeEditor from "./FormNodeEditor";
+import PhoneVerificationEditor from "./PhoneVerificationEditor";
+import SliderEditor from "./SliderEditor";
+import AddressEditor from "./AddressEditor";
+import DateEditor from "./DateEditor";
+import ResultsPageEditor from "./ResultsPageEditor";
+import TransitionEditor from "./TransitionEditor";
+
+function renderEditorBody({ draft, updateDraft, updateConfig, allNodes, allEdges, quiz, quizId }) {
+  const type = draft.node_type;
+  const editorProps = { draft, updateDraft, updateConfig, allNodes, allEdges, quiz, quizId };
+
+  switch (type) {
+    case "decision_node":
+      return <DecisionNodeEditor {...editorProps} />;
+    case "webhook_api":
+      return <WebhookEditor {...editorProps} />;
+    case "notification_sms":
+    case "notification_email":
+    case "notification_whatsapp":
+    case "notification_messenger":
+    case "notification_telegram":
+      return <NotificationEditor {...editorProps} />;
+    case "form":
+      return <FormNodeEditor {...editorProps} />;
+    case "phone_verification":
+      return <PhoneVerificationEditor {...editorProps} />;
+    case "slider":
+      return <SliderEditor {...editorProps} />;
+    case "address":
+      return <AddressEditor {...editorProps} />;
+    case "date_picker":
+    case "datetime_picker":
+      return <DateEditor {...editorProps} />;
+    case "results_page":
+      return <ResultsPageEditor {...editorProps} />;
+    case "transition":
+      return <TransitionEditor {...editorProps} />;
+    default:
+      return (
+        <NodeInspectorPanel
+          node={draft}
+          onUpdate={updateDraft}
+          allNodes={allNodes}
+          allEdges={allEdges}
+          quiz={quiz}
+          quizId={quizId}
+        />
+      );
+  }
+}
 
 /**
  * NodeEditorModal - slide-in panel with animations, dirty tracking, keyboard shortcuts,
@@ -70,6 +124,11 @@ export default function NodeEditorModal({
 
   const handleUpdate = useCallback((patch) => {
     setLocalData((prev) => ({ ...prev, ...patch }));
+    setIsDirty(true);
+  }, []);
+
+  const updateConfig = useCallback((patch) => {
+    setLocalData((prev) => ({ ...prev, config: { ...(prev.config || {}), ...patch } }));
     setIsDirty(true);
   }, []);
 
@@ -180,20 +239,17 @@ export default function NodeEditorModal({
           </button>
         </div>
 
-        {/* Inspector panel */}
+        {/* Per-type editor body */}
         <div className="flex-1 overflow-hidden flex flex-col min-h-0">
-          <NodeInspectorPanel
-            node={localData}
-            quiz={quiz}
-            quizId={quizId}
-            allNodes={allNodes}
-            allEdges={allEdges}
-            onUpdate={handleUpdate}
-            onClose={handleClose}
-            isDirty={isDirty}
-            onSave={handleSave}
-            onDiscard={handleDiscard}
-          />
+          {renderEditorBody({
+            draft: localData,
+            updateDraft: handleUpdate,
+            updateConfig,
+            allNodes,
+            allEdges,
+            quiz,
+            quizId,
+          })}
         </div>
 
         {/* Footer action bar */}

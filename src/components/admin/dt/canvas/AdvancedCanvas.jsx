@@ -5,7 +5,7 @@ import {
   ReactFlowProvider, useReactFlow, Panel,
 } from "@xyflow/react";
 import { AnimatePresence } from "framer-motion";
-import { Plus, Sun, Moon, X, LayoutGrid } from "lucide-react";
+import { Plus, Sun, Moon, X, LayoutGrid, Copy, Trash2 } from "lucide-react";
 import { DecisionFlowNode } from "./DecisionFlowNode";
 import { DecisionFlowEdge } from "./DecisionFlowEdge";
 import FloatingNodePalette from "./FloatingNodePalette";
@@ -104,6 +104,25 @@ function CanvasInner({
   const edgeReconnectSuccessful = useRef(true);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [editorNode, setEditorNode] = useState(null);
+  const [selectedNodeIds, setSelectedNodeIds] = useState([]);
+
+  const onSelectionChange = useCallback(({ nodes: selNodes }) => {
+    setSelectedNodeIds(selNodes.map((n) => n.id));
+  }, []);
+
+  const handleBulkDuplicate = useCallback((ids) => {
+    ids.forEach((id) => {
+      const node = nodes.find((n) => n.id === id);
+      if (node) onDuplicateNode(node);
+    });
+    setSelectedNodeIds([]);
+  }, [nodes, onDuplicateNode]);
+
+  const handleBulkDelete = useCallback((ids) => {
+    if (!window.confirm(`Delete ${ids.length} nodes? This cannot be undone.`)) return;
+    ids.forEach((id) => onDeleteNode(id));
+    setSelectedNodeIds([]);
+  }, [onDeleteNode]);
 
   // Flatten all nodes for the modal (pass raw data)
   const allNodeData = nodes.map((n) => ({ ...n.data, _flowId: n.id, position: n.position }));
@@ -260,10 +279,12 @@ function CanvasInner({
         onReconnectEnd={onReconnectEnd}
         reconnectRadius={20}
         isValidConnection={isValidConnection}
+        onSelectionChange={onSelectionChange}
         fitView
         proOptions={{ hideAttribution: true }}
         connectionMode="strict"
         multiSelectionKeyCode="Shift"
+        selectionOnDrag
         deleteKeyCode="Backspace"
         defaultEdgeOptions={{
           type: "decision",
@@ -314,6 +335,21 @@ function CanvasInner({
           </button>
         </Panel>
       </ReactFlow>
+
+      {/* Bulk action bar */}
+      {selectedNodeIds.length > 1 && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-slate-900 text-white px-3 py-2 rounded-lg shadow-xl pointer-events-auto">
+          <span className="text-sm font-medium">{selectedNodeIds.length} nodes selected</span>
+          <span className="text-slate-600">·</span>
+          <button onClick={() => handleBulkDuplicate(selectedNodeIds)} className="px-2 py-1 text-xs hover:bg-slate-700 rounded flex items-center gap-1 transition-colors">
+            <Copy size={12} /> Duplicate
+          </button>
+          <button onClick={() => handleBulkDelete(selectedNodeIds)} className="px-2 py-1 text-xs hover:bg-red-900 text-red-300 rounded flex items-center gap-1 transition-colors">
+            <Trash2 size={12} /> Delete
+          </button>
+          <button onClick={() => setSelectedNodeIds([])} className="px-2 py-1 text-xs hover:bg-slate-700 rounded transition-colors">Clear</button>
+        </div>
+      )}
 
       {/* Real per-node-type editor modal with AnimatePresence */}
       <AnimatePresence>

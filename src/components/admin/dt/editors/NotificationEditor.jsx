@@ -1,6 +1,7 @@
 import React from "react";
 import EditorShell from "./_EditorShell";
 import { Field, Toggle, NodePicker, EditorField, ScriptsEditor } from "./_primitives";
+import FieldRefInput from "./_primitives/FieldRefInput";
 
 const TABS = [
   { id: "general", label: "General" },
@@ -26,7 +27,7 @@ const RECIPIENT_HINTS = {
   notification_telegram: "Telegram chat ID field key",
 };
 
-export default function NotificationEditor({ draft, updateDraft, updateConfig, allNodes }) {
+export default function NotificationEditor({ draft, updateDraft, updateConfig, allNodes, quizId }) {
   const config = draft.config || {};
   const channel = draft.node_type;
   const isEmail = channel === "notification_email";
@@ -48,23 +49,42 @@ export default function NotificationEditor({ draft, updateDraft, updateConfig, a
           )}
           {tab === "recipient" && (
             <div className="space-y-4">
-              <Field label="Recipient Template" value={config.recipient_template || ""}
-                onChange={(v) => updateConfig({ recipient_template: v })}
-                placeholder={RECIPIENT_HINTS[channel] || "{recipient_field}"}
-                helper="Use {field_key} for interpolation. E.g. {phone} or hardcoded +15551234567" />
+              <EditorField label="Recipient Template" helper="Use {field_key} for interpolation. E.g. {phone} or hardcoded +15551234567">
+                <FieldRefInput
+                  value={config.recipient_template || ""}
+                  onChange={(v) => updateConfig({ recipient_template: v })}
+                  quizId={quizId}
+                  multiline={false}
+                  placeholder={RECIPIENT_HINTS[channel] || "{recipient_field}"}
+                  className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm"
+                />
+              </EditorField>
             </div>
           )}
           {tab === "message" && (
             <div className="space-y-4">
               {isEmail && (
-                <Field label="Subject" value={config.subject || ""} onChange={(v) => updateConfig({ subject: v })}
-                  placeholder="e.g. Your case review is in progress" />
+                <EditorField label="Subject">
+                  <FieldRefInput
+                    value={config.subject || ""}
+                    onChange={(v) => updateConfig({ subject: v })}
+                    quizId={quizId}
+                    multiline={false}
+                    placeholder="e.g. Your case review is in progress"
+                    className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm"
+                  />
+                </EditorField>
               )}
               <EditorField label={isEmail ? "Body (HTML/Markdown)" : "Message Body"}>
-                <textarea value={config.template_body || ""} rows={isEmail ? 12 : 6}
-                  onChange={(e) => updateConfig({ template_body: e.target.value })}
+                <FieldRefInput
+                  value={config.template_body || ""}
+                  onChange={(v) => updateConfig({ template_body: v })}
+                  quizId={quizId}
+                  multiline={true}
+                  rows={isEmail ? 12 : 6}
                   placeholder="Use {field_key} for dynamic interpolation. E.g. Hi {first_name}, ..."
-                  className="w-full px-3 py-2 rounded-md border border-input bg-background text-sm font-mono resize-y" />
+                  className="w-full px-3 py-2 rounded-md border border-input bg-background text-sm font-mono resize-y"
+                />
               </EditorField>
               <p className="text-xs text-slate-400">Available interpolation: {"{first_name}"}, {"{phone}"}, {"{email}"}, {"{state}"}, any custom field key.</p>
             </div>

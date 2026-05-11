@@ -13,10 +13,9 @@ export default function RuntimeNode({
   node, quiz, brand, fieldValues, runId, sessionId,
   contactForm, onAnswer, onNext, onFail,
 }) {
-  if (!node) return null;
-  const type = node.node_type;
-  const nodeId = node.node_id || node.id;
-  const customCss = node.config?.custom_css;
+  const type = node?.node_type;
+  const nodeId = node?.node_id || node?.id;
+  const customCss = node?.config?.custom_css;
 
   // Inject per-node custom CSS scoped to [data-node-id]
   React.useEffect(() => {
@@ -27,6 +26,8 @@ export default function RuntimeNode({
     el.textContent = customCss.replace(/([^{]+)\{/g, (m, sel) => `[data-node-id="${nodeId}"] ${sel.trim()} {`);
     return () => { const s = document.getElementById(styleId); if (s) s.remove(); };
   }, [customCss, nodeId]);
+
+  if (!node) return null;
 
   const wrap = (content) => (
     <div data-node-id={nodeId}>{content}</div>

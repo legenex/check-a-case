@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Plus, Trash2, Play, Eye } from "lucide-react";
 import EditorShell from "./_EditorShell";
 import { Field, Toggle, NodePicker, CustomFieldPicker, EditorField, ScriptsEditor } from "./_primitives";
+import FieldRefInput from "./_primitives/FieldRefInput";
 
 const TABS = [
   { id: "general", label: "General" },
@@ -47,7 +48,7 @@ const PRESETS = {
   },
 };
 
-export default function WebhookEditor({ draft, updateDraft, updateConfig, allNodes }) {
+export default function WebhookEditor({ draft, updateDraft, updateConfig, allNodes, quizId }) {
   const config = draft.config || {};
   const headers = config.headers || [];
   const responseMappings = config.response_mappings || [];
@@ -125,9 +126,14 @@ export default function WebhookEditor({ draft, updateDraft, updateConfig, allNod
                   </select>
                 </EditorField>
                 <EditorField label="URL" className="flex-1">
-                  <input value={config.url || ""} onChange={(e) => updateConfig({ url: e.target.value })}
+                  <FieldRefInput
+                    value={config.url || ""}
+                    onChange={(v) => updateConfig({ url: v })}
+                    quizId={quizId}
+                    multiline={false}
                     placeholder="https://api.example.com/endpoint"
-                    className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm font-mono" />
+                    className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm font-mono"
+                  />
                 </EditorField>
               </div>
               <div>
@@ -155,10 +161,15 @@ export default function WebhookEditor({ draft, updateDraft, updateConfig, allNod
           {tab === "body" && (
             <div className="space-y-3">
               <p className="text-xs text-slate-500">Use {"{field_key}"} for dynamic interpolation. Must be valid JSON for POST requests.</p>
-              <textarea value={config.body_template || ""} rows={16}
-                onChange={(e) => updateConfig({ body_template: e.target.value })}
+              <FieldRefInput
+                value={config.body_template || ""}
+                onChange={(v) => updateConfig({ body_template: v })}
+                quizId={quizId}
+                multiline={true}
+                rows={16}
                 placeholder={'{\n  "phone": "{phone}",\n  "state": "{state}"\n}'}
-                className="w-full px-3 py-2 rounded-md border border-input bg-background text-sm font-mono resize-y" />
+                className="w-full px-3 py-2 rounded-md border border-input bg-background text-sm font-mono resize-y"
+              />
             </div>
           )}
           {tab === "response_mapping" && (

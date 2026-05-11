@@ -250,7 +250,11 @@ export default function DecisionTreeRunner({ slug, previewMode, replayMode, repl
     const newPath = [...currentPath, { node_id: nextNodeId, entered_at: new Date().toISOString() }];
 
     // Apply tags (including auto_tag_visited)
-    const visitedTag = next.config?.auto_tag_visited ? [`visited:${nextNodeId}`] : [];
+    const visitedSlug = next.config?.auto_tag_visited
+      ? (next.label || next.node_id || "node")
+          .toString().toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 48)
+      : null;
+    const visitedTag = visitedSlug ? [`visited:${visitedSlug}`] : [];
     const newTags = [...currentTags, ...(next.tags_to_add || []), ...visitedTag].filter((t) => !(next.tags_to_remove || []).includes(t));
 
     // Persist
