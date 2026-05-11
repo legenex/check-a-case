@@ -81,7 +81,7 @@ function OutputRow({ label, accentHex, isLight, showLabel, onOutputClick, onOutp
             data-handle-output="true"
             data-node-id={nodeId}
             data-handle-id={handleId}
-            onClick={connectionMode === "click" ? (e) => { e.stopPropagation(); onOutputClick(e, nodeId, handleId, accentHex); } : undefined}
+            onClick={connectionMode === "click" ? (e) => { e.stopPropagation(); onOutputClick?.(e, nodeId, handleId, accentHex); } : undefined}
             onPointerDown={connectionMode === "drag" ? (e) => { e.stopPropagation(); onOutputPointerDown(e, nodeId, handleId, accentHex); } : undefined}
       />
     </div>
@@ -447,7 +447,7 @@ export default function DesignNode({
             }}
             data-handle-input="true"
             data-node-id={node.id}
-            onClick={connectionMode === "click" ? (e) => { e.stopPropagation(); onInputClick(e, node.id); } : undefined}
+            onClick={connectionMode === "click" ? (e) => { e.stopPropagation(); onInputClick?.(e, node.id); } : undefined}
           />
         )}
 
