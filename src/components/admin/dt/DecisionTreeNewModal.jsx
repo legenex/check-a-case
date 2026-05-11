@@ -10,7 +10,6 @@ export default function DecisionTreeNewModal({ onClose, onCreated }) {
   const [tab, setTab] = useState(0);
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
-  const [builderMode, setBuilderMode] = useState("basic");
   const [campaignType, setCampaignType] = useState("mva");
 
   const { data: templates = [] } = useQuery({
@@ -49,7 +48,6 @@ export default function DecisionTreeNewModal({ onClose, onCreated }) {
       const quiz = await base44.entities.Quiz.create({
         title,
         slug: slug || title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""),
-        builder_mode: builderMode,
         campaign_type: campaignType,
         status: "draft",
         version: 1,
@@ -115,20 +113,6 @@ export default function DecisionTreeNewModal({ onClose, onCreated }) {
 
         {tab === 0 && (
           <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Builder Mode</label>
-              <div className="flex gap-3">
-                {["basic", "advanced"].map((m) => (
-                  <label key={m} className="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" checked={builderMode === m} onChange={() => setBuilderMode(m)} disabled={m === "advanced"} />
-                    <span className={`text-sm ${m === "advanced" ? "text-muted-foreground" : ""}`}>
-                      {m.charAt(0).toUpperCase() + m.slice(1)}
-                      {m === "advanced" && <span className="ml-1.5 text-xs bg-muted px-1.5 py-0.5 rounded">Phase 2</span>}
-                    </span>
-                  </label>
-                ))}
-              </div>
-            </div>
             <div>
               <label className="block text-sm font-medium mb-1">Title <span className="text-destructive">*</span></label>
               <input

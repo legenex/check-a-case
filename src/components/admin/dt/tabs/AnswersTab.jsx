@@ -7,15 +7,15 @@ function toSnakeCase(str) {
 }
 
 function RoutingChip({ optionId, nodeId, allEdges, allNodes }) {
-  // Find edge from this node whose source_handle matches this optionId
+  // Find edge from this node whose source_handle matches answer-{optionId} (new) or bare optionId (legacy)
   const perAnswerEdge = allEdges.find(
     (e) => (e.source === nodeId || e.data?.source_node_id === nodeId || e.source_node_id === nodeId)
-      && e.sourceHandle === optionId
+      && (e.sourceHandle === `answer-${optionId}` || e.sourceHandle === optionId)
   );
 
   const defaultEdge = !perAnswerEdge && allEdges.find(
     (e) => (e.source === nodeId || e.data?.source_node_id === nodeId || e.source_node_id === nodeId)
-      && (!e.sourceHandle || e.sourceHandle === "default")
+      && (!e.sourceHandle || e.sourceHandle === "default" || e.sourceHandle === "source-right")
   );
 
   const resolveLabel = (edge) => {
@@ -164,6 +164,7 @@ function AnswerRow({ option, idx, scoreEnabled, nodeId, allEdges, allNodes, onUp
 
 export default function AnswersTab({ node, quiz, allNodes, allEdges, onUpdate }) {
   const scoreEnabled = quiz?.settings?.score_enabled;
+  const isDropdown = node.node_type === "dropdown";
   const options = node.answer_options || [];
   const nodeId = node.id || node.node_id;
 
@@ -237,12 +238,16 @@ export default function AnswersTab({ node, quiz, allNodes, allEdges, onUpdate })
         <Plus className="w-4 h-4" /> Add Answer
       </button>
 
-      {options.length > 0 && (
+      {isDropdown ? (
+        <div className="rounded-lg bg-amber-50 border border-amber-100 p-3 text-xs text-amber-700">
+          Dropdowns capture the selected value into the node's primary field assignment. For per-option behavior, use a Single Select or Multiple Choice node instead.
+        </div>
+      ) : options.length > 0 ? (
         <div className="rounded-lg bg-blue-50 border border-blue-100 p-3 text-xs text-blue-700 space-y-1">
           <p className="font-semibold">Per-answer routing</p>
-          <p>Drag from each answer handle on the canvas to wire it to the next node. Use the default handle at the bottom to route all answers to one place.</p>
+          <p>Drag from each answer handle on the RIGHT side of the node to wire it to the next step. The "default route" handle at the bottom-right routes all unmatched answers to one place.</p>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

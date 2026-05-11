@@ -37,18 +37,18 @@ export function getNextNodeId(nodeId, adjacency) {
 export function getNextNodeAfterAnswer(nodeId, selectedOptionId, adjacency) {
   const outgoing = adjacency[nodeId] || [];
 
-  // 1. Per-answer edge match
+  // 1. Per-answer edge: handle is "answer-{option_id}" (new) or bare option_id (legacy)
   if (selectedOptionId) {
+    const newHandleId = `answer-${selectedOptionId}`;
     const answerEdge = outgoing.find(
-      (e) => e.source_handle && e.source_handle !== "default" && e.source_handle === selectedOptionId
+      (e) => e.source_handle === newHandleId || e.source_handle === selectedOptionId
     );
     if (answerEdge) return answerEdge.target_node_id;
   }
 
   // 2. Default / fallback edge
-  const defaultEdge = outgoing.find(
-    (e) => !e.source_handle || e.source_handle === "default"
-  );
+  const DEFAULT_HANDLES = new Set(["default", "source-right", "", null, undefined]);
+  const defaultEdge = outgoing.find((e) => DEFAULT_HANDLES.has(e.source_handle));
   if (defaultEdge) return defaultEdge.target_node_id;
 
   // 3. Last resort: any outgoing edge

@@ -9,6 +9,7 @@ export const NODE_CATEGORIES = [
   {
     name: "Entry",
     iconColor: "text-blue-600",
+    iconBg: "bg-blue-100",
     borderClass: "border-blue-500 bg-blue-50/30",
     types: [
       { type: "start_page", label: "Start Page", Icon: Play, description: "First page, captures URL params" },
@@ -18,6 +19,7 @@ export const NODE_CATEGORIES = [
   {
     name: "Questions",
     iconColor: "text-slate-600",
+    iconBg: "bg-slate-100",
     borderClass: "border-slate-300 bg-white",
     types: [
       { type: "single_select", label: "Single Select", Icon: Circle, description: "One answer, auto-advance" },
@@ -36,6 +38,7 @@ export const NODE_CATEGORIES = [
   {
     name: "Logic",
     iconColor: "text-amber-600",
+    iconBg: "bg-amber-100",
     borderClass: "border-amber-500 bg-amber-50/30",
     types: [
       { type: "decision_node", label: "Decision", Icon: GitBranch, description: "Branch on field values" },
@@ -45,6 +48,7 @@ export const NODE_CATEGORIES = [
   {
     name: "Forms",
     iconColor: "text-emerald-600",
+    iconBg: "bg-emerald-100",
     borderClass: "border-emerald-500 bg-emerald-50/30",
     types: [
       { type: "form", label: "Form", Icon: ClipboardList, description: "Lead capture form" },
@@ -53,6 +57,7 @@ export const NODE_CATEGORIES = [
   {
     name: "Notifications",
     iconColor: "text-purple-600",
+    iconBg: "bg-purple-100",
     borderClass: "border-purple-500 bg-purple-50/30",
     types: [
       { type: "notification_sms", label: "SMS", Icon: MessageSquare, description: "Twilio SMS" },
@@ -65,6 +70,7 @@ export const NODE_CATEGORIES = [
   {
     name: "Verification",
     iconColor: "text-cyan-600",
+    iconBg: "bg-cyan-100",
     borderClass: "border-cyan-500 bg-cyan-50/30",
     types: [
       { type: "phone_verification", label: "Phone Verify", Icon: Shield, description: "Twilio Verify OTP" },
@@ -73,6 +79,7 @@ export const NODE_CATEGORIES = [
   {
     name: "Integrations",
     iconColor: "text-orange-600",
+    iconBg: "bg-orange-100",
     borderClass: "border-orange-500 bg-orange-50/30",
     types: [
       { type: "webhook_api", label: "Webhook / API", Icon: Webhook, description: "External call" },
@@ -81,6 +88,7 @@ export const NODE_CATEGORIES = [
   {
     name: "Outcomes",
     iconColor: "text-blue-700",
+    iconBg: "bg-blue-100",
     borderClass: "border-blue-600 bg-blue-600 text-white",
     types: [
       { type: "results_page", label: "Results Page", Icon: Trophy, description: "Final page, tier outcome" },

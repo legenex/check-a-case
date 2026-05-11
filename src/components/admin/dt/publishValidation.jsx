@@ -34,12 +34,11 @@ export function validateTree(quiz, questions, edges) {
     }
   }
 
-  // 4. Decision nodes need 2+ rules and else_target
+  // 4. Decision nodes - warn if no paths defined
   const decisionNodes = questions.filter((q) => q.node_type === "decision_node");
   for (const dn of decisionNodes) {
-    const rules = dn.config?.rules || [];
-    if (rules.length < 2) errors.push(`Decision node "${dn.label || dn.node_id}" needs at least 2 rules.`);
-    if (!dn.config?.else_target_node_id) errors.push(`Decision node "${dn.label || dn.node_id}" missing an else target.`);
+    const paths = dn.config?.paths || dn.config?.rules || [];
+    if (paths.length === 0) errors.push(`Decision node "${dn.label || dn.node_id}" has no paths configured.`);
   }
 
   // 5. Non-terminal nodes need at least one outgoing edge.
@@ -61,8 +60,9 @@ export function validateTree(quiz, questions, edges) {
 
     if (ANSWER_TYPES.has(q.node_type)) {
       // Must have either a per-answer edge or a default edge
-      const hasDefault = nodeEdges.some((e) => !e.source_handle || e.source_handle === "default");
-      const hasAnyAnswerEdge = nodeEdges.some((e) => e.source_handle && e.source_handle !== "default");
+      const defaultHandles = new Set(["default", "source-right", "", null, undefined]);
+      const hasDefault = nodeEdges.some((e) => defaultHandles.has(e.source_handle));
+      const hasAnyAnswerEdge = nodeEdges.some((e) => e.source_handle && e.source_handle.startsWith("answer-"));
       if (!hasDefault && !hasAnyAnswerEdge) {
         errors.push(
           `Node "${q.label || q.node_type}" has answers but no routing. Connect each answer to its next step, or add a default fallback connection.`

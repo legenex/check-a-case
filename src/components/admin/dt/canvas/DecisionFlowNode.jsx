@@ -1,203 +1,314 @@
 import React, { memo } from "react";
 import { Handle, Position } from "@xyflow/react";
-import { AlertCircle, Database, Tag, Code, Edit, Copy, Trash2, Circle } from "lucide-react";
-import { getCategoryForType, getBorderClass } from "./nodeCategories";
+import { Database, Tag, Code, Copy, Trash2, Circle, Eye, Pencil, AlertCircle, CheckCircle, XCircle } from "lucide-react";
+import { getCategoryForType } from "./nodeCategories";
 
 const ANSWER_TYPES = new Set(["single_select", "multiple_choice", "checkbox_multi_select", "dropdown"]);
-const OUTCOME_TYPES = ["results_page"];
+
+const CARD_STYLES = {
+  start_page:            "bg-blue-50 border-blue-300",
+  custom_page:           "bg-blue-50 border-blue-300",
+  single_select:         "bg-white border-slate-300",
+  multiple_choice:       "bg-white border-slate-300",
+  checkbox_multi_select: "bg-white border-slate-300",
+  dropdown:              "bg-white border-slate-300",
+  text_field:            "bg-white border-slate-300",
+  text_block:            "bg-white border-slate-300",
+  information:           "bg-white border-slate-300",
+  slider:                "bg-white border-slate-300",
+  address:               "bg-white border-slate-300",
+  date_picker:           "bg-white border-slate-300",
+  datetime_picker:       "bg-white border-slate-300",
+  decision_node:         "bg-amber-50 border-amber-400",
+  transition:            "bg-amber-50 border-amber-300",
+  form:                  "bg-emerald-50 border-emerald-400",
+  notification_sms:      "bg-purple-50 border-purple-400",
+  notification_email:    "bg-purple-50 border-purple-400",
+  notification_whatsapp: "bg-purple-50 border-purple-400",
+  notification_messenger:"bg-purple-50 border-purple-400",
+  notification_telegram: "bg-purple-50 border-purple-400",
+  phone_verification:    "bg-cyan-50 border-cyan-400",
+  webhook_api:           "bg-orange-50 border-orange-400",
+  results_page:          "bg-blue-600 border-blue-700",
+};
+
+const DARK_CARD_STYLES = {
+  start_page:            "bg-blue-950 border-blue-700",
+  custom_page:           "bg-blue-950 border-blue-700",
+  single_select:         "bg-slate-900 border-slate-700",
+  multiple_choice:       "bg-slate-900 border-slate-700",
+  checkbox_multi_select: "bg-slate-900 border-slate-700",
+  dropdown:              "bg-slate-900 border-slate-700",
+  text_field:            "bg-slate-900 border-slate-700",
+  text_block:            "bg-slate-900 border-slate-700",
+  information:           "bg-slate-900 border-slate-700",
+  slider:                "bg-slate-900 border-slate-700",
+  address:               "bg-slate-900 border-slate-700",
+  date_picker:           "bg-slate-900 border-slate-700",
+  datetime_picker:       "bg-slate-900 border-slate-700",
+  decision_node:         "bg-amber-950 border-amber-700",
+  transition:            "bg-amber-950 border-amber-800",
+  form:                  "bg-emerald-950 border-emerald-700",
+  notification_sms:      "bg-purple-950 border-purple-700",
+  notification_email:    "bg-purple-950 border-purple-700",
+  notification_whatsapp: "bg-purple-950 border-purple-700",
+  notification_messenger:"bg-purple-950 border-purple-700",
+  notification_telegram: "bg-purple-950 border-purple-700",
+  phone_verification:    "bg-cyan-950 border-cyan-700",
+  webhook_api:           "bg-orange-950 border-orange-700",
+  results_page:          "bg-blue-900 border-blue-600",
+};
 
 export const DecisionFlowNode = memo(function DecisionFlowNode({ data, selected }) {
   const { typeDef, cat } = getCategoryForType(data.node_type);
   const Icon = typeDef.Icon;
-  const isOutcome = OUTCOME_TYPES.includes(data.node_type);
   const isAnswerType = ANSWER_TYPES.has(data.node_type);
-  const borderClass = getBorderClass(data.node_type);
-  const rules = data.config?.rules || [];
+  const isDecisionNode = data.node_type === "decision_node";
+  const isWebhookNode = data.node_type === "webhook_api";
+  const isOutcome = data.node_type === "results_page";
+  const isDark = data._darkMode;
+  const showAnswers = data._showAnswerHandles !== false;
+  const answerOptions = data.answer_options || [];
+  const paths = data.config?.paths || [];
   const cfCount = (data.custom_field_assignments || []).length;
   const tagCount = (data.tags_to_add || []).length + (data.tags_to_remove || []).length;
   const scriptCount = (data.scripts || []).length;
-  const hasError = data.__error;
-  const answerOptions = data.answer_options || [];
+  const isDirty = data._isDirty || false;
+  const connectedHandles = new Set(data._connectedHandles || []);
 
-  // Check which option_ids have a connected edge
-  const connectedHandles = new Set((data._connectedHandles || []));
+  const cardStyle = isDark
+    ? (DARK_CARD_STYLES[data.node_type] || "bg-slate-900 border-slate-700")
+    : (CARD_STYLES[data.node_type] || "bg-white border-slate-300");
 
-  const isConnected = (optionId) => connectedHandles.has(optionId);
-
-  const cardWidth = isAnswerType ? "w-[280px]" : "w-[260px]";
+  const textColor = (isOutcome || isDark) ? "text-white" : "text-slate-900";
+  const subTextColor = isOutcome ? "text-blue-200" : isDark ? "text-slate-400" : "text-slate-500";
+  const headerBg = isOutcome ? "bg-blue-700/60" : isDark ? "bg-white/5" : "bg-black/[0.03]";
+  const borderColor = isOutcome ? "border-blue-500/60" : isDark ? "border-white/10" : "border-inherit";
+  const footerBg = isDark ? "bg-white/5" : "bg-slate-50/80";
 
   return (
     <div
-      className={`relative rounded-xl border-2 shadow-sm transition-all ${cardWidth} cursor-pointer group
-        ${borderClass}
-        ${selected ? "ring-2 ring-blue-400 ring-offset-1 shadow-lg" : "hover:shadow-md"}
-        ${isOutcome ? "text-white" : ""}
+      className={`relative rounded-xl border shadow-sm transition-all duration-200 cursor-pointer group
+        ${cardStyle}
+        ${selected
+          ? "shadow-lg ring-2 ring-blue-500/40 ring-offset-1"
+          : "hover:shadow-md hover:ring-1 hover:ring-slate-300/60"}
       `}
+      style={{ width: 280 }}
     >
-      {/* Target handle (top) */}
+      {/* TARGET handle - LEFT edge */}
       {data.node_type !== "start_page" && (
         <Handle
           type="target"
-          position={Position.Top}
-          className="!w-3 !h-3 !border-2 !border-white !bg-slate-400"
+          position={Position.Left}
+          id="target-left"
+          className="!w-3 !h-3 !border-2 !border-slate-400 !bg-slate-200 hover:!bg-blue-400 hover:!border-blue-500 transition-colors"
+          style={{ left: -6, top: "50%" }}
         />
       )}
 
       {/* Header */}
-      <div className={`px-3 py-2 border-b flex items-center gap-2 rounded-t-xl ${isOutcome ? "border-blue-500 bg-blue-600" : "border-inherit bg-white/60"}`}>
-        <Icon size={14} className={isOutcome ? "text-blue-100" : cat.iconColor} />
-        <span className={`text-[10px] font-semibold uppercase tracking-wide flex-1 truncate ${isOutcome ? "text-blue-100" : "text-slate-500"}`}>
+      <div className={`px-3 py-2 border-b ${borderColor} ${headerBg} rounded-t-xl flex items-center gap-2`}>
+        <div className={`w-5 h-5 rounded flex items-center justify-center flex-shrink-0 ${isOutcome ? "bg-blue-500/40" : "bg-current/10"}`}
+          style={{ background: isOutcome ? undefined : cat.iconColor.replace("text-", "").includes("-") ? undefined : undefined }}>
+          <Icon size={12} className={isOutcome ? "text-white" : cat.iconColor} />
+        </div>
+        <span className={`text-[10px] font-semibold uppercase tracking-wide flex-1 truncate ${subTextColor}`}>
           {typeDef.label}
         </span>
-        {hasError && <AlertCircle size={13} className="text-red-500 flex-shrink-0" />}
+        {isDirty && <span className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0" title="Unsaved" />}
+        {data.__error && <AlertCircle size={12} className="text-red-500 flex-shrink-0" />}
       </div>
 
       {/* Body */}
-      <div className={`px-3 py-3 ${isOutcome ? "bg-blue-600" : "bg-white/80"}`}>
-        <div className={`text-sm font-medium line-clamp-2 ${isOutcome ? "text-white" : "text-slate-900"}`}>
+      <div className="px-3 py-2.5">
+        <div className={`text-sm font-medium line-clamp-2 ${textColor}`}>
           {data.label || data.node_type}
         </div>
         {data.title_display && (
-          <div className={`text-xs mt-1 line-clamp-2 ${isOutcome ? "text-blue-200" : "text-slate-500"}`}>
-            {data.title_display}
-          </div>
+          <div className={`text-xs mt-0.5 line-clamp-2 ${subTextColor}`}>{data.title_display}</div>
         )}
       </div>
 
-      {/* Footer badges */}
-      {!isAnswerType && (
-        <div className={`px-3 py-1.5 border-t flex items-center gap-2 text-[10px] rounded-b-xl ${isOutcome ? "border-blue-500 bg-blue-700 text-blue-200" : "border-inherit bg-slate-50/80 text-slate-500"}`}>
-          {cfCount > 0 && (
-            <span className="inline-flex items-center gap-0.5">
-              <Database size={9} />{cfCount}
-            </span>
-          )}
-          {tagCount > 0 && (
-            <span className="inline-flex items-center gap-0.5">
-              <Tag size={9} />{tagCount}
-            </span>
-          )}
-          {scriptCount > 0 && (
-            <span className="inline-flex items-center gap-0.5">
-              <Code size={9} />{scriptCount}
-            </span>
-          )}
-          {data.required && <span className="ml-auto text-red-400 font-bold">*</span>}
-        </div>
-      )}
-
-      {/* Answer rows for answer-type nodes */}
-      {isAnswerType && (
-        <div className="bg-white rounded-b-xl border-t border-slate-100 overflow-hidden">
-          {(cfCount > 0 || tagCount > 0 || scriptCount > 0) && (
-            <div className="px-3 py-1 border-b border-slate-100 flex items-center gap-2 text-[9px] text-slate-400">
-              {cfCount > 0 && <span className="inline-flex items-center gap-0.5"><Database size={8} />{cfCount}</span>}
-              {tagCount > 0 && <span className="inline-flex items-center gap-0.5"><Tag size={8} />{tagCount}</span>}
-              {scriptCount > 0 && <span className="inline-flex items-center gap-0.5"><Code size={8} />{scriptCount}</span>}
-            </div>
-          )}
-
+      {/* Answer rows (answer-type, showAnswers ON) */}
+      {isAnswerType && showAnswers && (
+        <div className={`border-t ${borderColor}`}>
           {answerOptions.length === 0 ? (
-            <div className="py-3 text-center text-xs text-slate-400 italic">Add answers in the inspector</div>
+            <div className={`py-2.5 text-center text-[11px] italic ${subTextColor}`}>No answers yet</div>
           ) : (
-            answerOptions.map((option) => {
-              const connected = isConnected(option.option_id);
+            answerOptions.map((opt) => {
+              const connected = connectedHandles.has(`answer-${opt.option_id}`);
               return (
                 <div
-                  key={option.option_id}
-                  className={`relative flex items-center gap-2 px-3 py-1.5 border-t border-slate-100 hover:bg-slate-50 transition-colors ${connected ? "bg-blue-50/30" : ""}`}
-                  style={{ minHeight: 32 }}
+                  key={opt.option_id}
+                  className={`relative flex items-center gap-2 px-3 border-b last:border-b-0 ${borderColor} ${connected ? (isDark ? "bg-blue-900/30" : "bg-blue-50/40") : (isDark ? "hover:bg-white/5" : "hover:bg-slate-50")}`}
+                  style={{ minHeight: 30 }}
                 >
-                  <Circle size={10} className="flex-shrink-0 text-slate-400" />
-                  <span className="text-xs text-slate-700 truncate flex-1">{option.label || "Untitled option"}</span>
-                  {option.is_dq && (
-                    <span className="text-[9px] font-semibold uppercase text-red-600 bg-red-50 px-1.5 py-0.5 rounded flex-shrink-0">DQ</span>
+                  <Circle size={8} className={`flex-shrink-0 ${subTextColor}`} />
+                  <span className={`text-xs truncate flex-1 ${textColor}`}>{opt.label || "Untitled"}</span>
+                  {opt.is_dq && (
+                    <span className="text-[9px] font-bold uppercase text-red-600 bg-red-50 px-1 rounded flex-shrink-0">DQ</span>
                   )}
                   <Handle
                     type="source"
                     position={Position.Right}
-                    id={option.option_id}
-                    className={`!w-3 !h-3 !border-2 ${connected ? "!bg-blue-500 !border-blue-600" : "!bg-white !border-slate-400"}`}
-                    style={{ right: "-6px", top: "50%", transform: "translateY(-50%)", position: "absolute" }}
+                    id={`answer-${opt.option_id}`}
+                    className={`!w-3 !h-3 !border-2 transition-colors ${connected ? "!bg-blue-500 !border-blue-600" : "!bg-white !border-slate-400 hover:!bg-blue-400 hover:!border-blue-500"}`}
+                    style={{ right: -6, position: "absolute", top: "50%", transform: "translateY(-50%)" }}
                   />
                 </div>
               );
             })
           )}
-
-          {/* Default fallback handle row */}
-          <div className="relative flex items-center justify-end px-3 py-1 border-t border-slate-100 bg-slate-50/50" style={{ minHeight: 28 }}>
-            <span className="text-[9px] text-slate-400 italic mr-3">default</span>
+          {/* Default fallback row */}
+          <div className={`relative flex items-center justify-between px-3 py-1.5 ${isDark ? "bg-white/5" : "bg-slate-50/60"}`} style={{ minHeight: 26 }}>
+            <span className={`text-[9px] italic ${subTextColor}`}>default route</span>
             <Handle
               type="source"
-              position={Position.Bottom}
-              id="default"
+              position={Position.Right}
+              id="source-right"
               className="!w-3 !h-3 !border-2 !bg-slate-300 !border-slate-400"
-              style={{ bottom: "-6px", left: "50%", transform: "translateX(-50%)", position: "absolute" }}
+              style={{ right: -6, position: "absolute", top: "50%", transform: "translateY(-50%)" }}
             />
           </div>
         </div>
       )}
 
+      {/* Answer-type collapsed (showAnswers OFF) */}
+      {isAnswerType && !showAnswers && (
+        <div className={`px-3 py-1.5 border-t ${borderColor} ${footerBg} rounded-b-xl flex items-center gap-2 relative`} style={{ minHeight: 30 }}>
+          <span className={`text-[10px] ${subTextColor}`}>{answerOptions.length} options</span>
+          {cfCount > 0 && <span className={`inline-flex items-center gap-0.5 text-[10px] ${subTextColor}`}><Database size={8} />{cfCount}</span>}
+          <Handle
+            type="source"
+            position={Position.Right}
+            id="source-right"
+            className="!w-3 !h-3 !border-2 !bg-slate-300 !border-slate-400"
+            style={{ right: -6, position: "absolute", top: "50%", transform: "translateY(-50%)" }}
+          />
+        </div>
+      )}
+
+      {/* Decision node paths */}
+      {isDecisionNode && (
+        <div className={`border-t ${borderColor}`}>
+          {paths.map((path) => {
+            const connected = connectedHandles.has(`path-${path.path_id}`);
+            return (
+              <div
+                key={path.path_id}
+                className={`relative flex items-center gap-2 px-3 border-b last:border-b-0 ${borderColor} ${isDark ? "hover:bg-white/5" : "hover:bg-slate-50"}`}
+                style={{ minHeight: 30 }}
+              >
+                <span className={`text-xs truncate flex-1 ${textColor}`}>{path.title || `Path`}</span>
+                <Handle
+                  type="source"
+                  position={Position.Right}
+                  id={`path-${path.path_id}`}
+                  className={`!w-3 !h-3 !border-2 transition-colors ${connected ? "!bg-amber-500 !border-amber-600" : "!bg-white !border-slate-400"}`}
+                  style={{ right: -6, position: "absolute", top: "50%", transform: "translateY(-50%)" }}
+                />
+              </div>
+            );
+          })}
+          {/* Else/fallback */}
+          <div className={`relative flex items-center px-3 py-1.5 ${isDark ? "bg-white/5" : "bg-slate-50/60"}`} style={{ minHeight: 28 }}>
+            <span className={`text-[10px] italic ${subTextColor}`}>else (fallback)</span>
+            <Handle
+              type="source"
+              position={Position.Right}
+              id="path-else"
+              className="!w-3 !h-3 !bg-slate-400 !border-2 !border-slate-500"
+              style={{ right: -6, position: "absolute", top: "50%", transform: "translateY(-50%)" }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Webhook success / failure */}
+      {isWebhookNode && (
+        <div className={`border-t ${borderColor}`}>
+          <div className={`relative flex items-center gap-2 px-3 border-b ${borderColor}`} style={{ minHeight: 30 }}>
+            <CheckCircle size={11} className="text-emerald-500 flex-shrink-0" />
+            <span className="text-xs text-emerald-700 flex-1">Success</span>
+            <Handle
+              type="source"
+              position={Position.Right}
+              id="success"
+              className="!w-3 !h-3 !bg-emerald-500 !border-2 !border-emerald-600"
+              style={{ right: -6, position: "absolute", top: "50%", transform: "translateY(-50%)" }}
+            />
+          </div>
+          <div className="relative flex items-center gap-2 px-3" style={{ minHeight: 30 }}>
+            <XCircle size={11} className="text-red-500 flex-shrink-0" />
+            <span className="text-xs text-red-700 flex-1">Failure</span>
+            <Handle
+              type="source"
+              position={Position.Right}
+              id="failure"
+              className="!w-3 !h-3 !bg-red-500 !border-2 !border-red-600"
+              style={{ right: -6, position: "absolute", top: "50%", transform: "translateY(-50%)" }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Default right source handle for simple nodes */}
+      {!isAnswerType && !isDecisionNode && !isWebhookNode && !isOutcome && (
+        <div className={`px-3 py-1.5 border-t ${borderColor} ${footerBg} rounded-b-xl flex items-center gap-2 relative`} style={{ minHeight: 28 }}>
+          {cfCount > 0 && <span className={`inline-flex items-center gap-0.5 text-[10px] ${subTextColor}`}><Database size={8} />{cfCount}</span>}
+          {tagCount > 0 && <span className={`inline-flex items-center gap-0.5 text-[10px] ${subTextColor}`}><Tag size={8} />{tagCount}</span>}
+          {scriptCount > 0 && <span className={`inline-flex items-center gap-0.5 text-[10px] ${subTextColor}`}><Code size={8} />{scriptCount}</span>}
+          <Handle
+            type="source"
+            position={Position.Right}
+            id="source-right"
+            className="!w-3 !h-3 !border-2 !bg-slate-300 !border-slate-400 hover:!bg-blue-400 hover:!border-blue-500 transition-colors"
+            style={{ right: -6, position: "absolute", top: "50%", transform: "translateY(-50%)" }}
+          />
+        </div>
+      )}
+
+      {/* Outcome node - no source handle, small footer */}
+      {isOutcome && (
+        <div className="px-3 py-1.5 bg-blue-700/40 rounded-b-xl border-t border-blue-500/40">
+          <span className="text-[10px] text-blue-200">
+            {data.config?.qualification_tier ? `Tier: ${data.config.qualification_tier}` : "Outcome"}
+          </span>
+        </div>
+      )}
+
       {/* Hover actions */}
-      <div className="absolute -top-6 right-1 opacity-0 group-hover:opacity-100 transition-opacity flex gap-0.5 z-10">
+      <div className="absolute -top-7 left-0 opacity-0 group-hover:opacity-100 transition-opacity flex gap-0.5 z-10 pointer-events-none group-hover:pointer-events-auto">
+        <button
+          onMouseDown={(e) => { e.stopPropagation(); data.onPreview?.(); }}
+          className="bg-white border border-slate-200 rounded-md px-1.5 py-1 shadow-sm hover:bg-blue-50 flex items-center gap-1"
+          title="Preview"
+        >
+          <Eye size={11} className="text-blue-500" />
+        </button>
         <button
           onMouseDown={(e) => { e.stopPropagation(); data.onEdit?.(); }}
-          className="bg-white border border-slate-200 rounded p-1 shadow-sm hover:bg-slate-100"
+          className="bg-white border border-slate-200 rounded-md px-1.5 py-1 shadow-sm hover:bg-slate-50 flex items-center gap-1"
           title="Edit"
         >
-          <Edit size={11} className="text-slate-600" />
+          <Pencil size={11} className="text-slate-600" />
         </button>
         <button
           onMouseDown={(e) => { e.stopPropagation(); data.onDuplicate?.(); }}
-          className="bg-white border border-slate-200 rounded p-1 shadow-sm hover:bg-slate-100"
+          className="bg-white border border-slate-200 rounded-md px-1.5 py-1 shadow-sm hover:bg-slate-50 flex items-center gap-1"
           title="Duplicate"
         >
           <Copy size={11} className="text-slate-600" />
         </button>
         <button
           onMouseDown={(e) => { e.stopPropagation(); data.onDelete?.(); }}
-          className="bg-white border border-slate-200 rounded p-1 shadow-sm hover:bg-red-50"
+          className="bg-white border border-slate-200 rounded-md px-1.5 py-1 shadow-sm hover:bg-red-50 flex items-center gap-1"
           title="Delete"
         >
           <Trash2 size={11} className="text-red-500" />
         </button>
       </div>
-
-      {/* Default source handle for non-answer, non-outcome, non-decision nodes */}
-      {!isAnswerType && data.node_type !== "results_page" && rules.length === 0 && (
-        <Handle
-          type="source"
-          position={Position.Bottom}
-          id="default"
-          className="!w-3 !h-3 !border-2 !border-white !bg-slate-400"
-        />
-      )}
-
-      {/* Decision node: multiple source handles */}
-      {data.node_type === "decision_node" && rules.length > 0 && (
-        <>
-          {rules.map((rule, idx) => (
-            <Handle
-              key={rule.id || idx}
-              type="source"
-              position={Position.Bottom}
-              id={rule.id || `rule-${idx}`}
-              style={{ left: `${((idx + 1) * 100) / (rules.length + 1)}%` }}
-              className="!w-3 !h-3 !border-2 !border-white !bg-amber-400"
-              title={rule.label || `Rule ${idx + 1}`}
-            />
-          ))}
-          <Handle
-            type="source"
-            position={Position.Bottom}
-            id="else"
-            style={{ left: `${((rules.length + 1) * 100) / (rules.length + 2)}%` }}
-            className="!w-3 !h-3 !border-2 !border-white !bg-slate-400"
-            title="Else"
-          />
-        </>
-      )}
     </div>
   );
 });

@@ -2,13 +2,12 @@ import React, { useState, useCallback, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { applyNodeChanges, applyEdgeChanges, addEdge } from "@xyflow/react";
-import { ArrowLeft, Eye, Save, CheckCircle2, Clock, ExternalLink, Zap } from "lucide-react";
+import { applyNodeChanges, applyEdgeChanges, addEdge, MarkerType } from "@xyflow/react";
+import { ArrowLeft, Eye, Save, CheckCircle2, Clock, ExternalLink, Zap, Sun, Moon, RotateCcw, RotateCw } from "lucide-react";
 import { format } from "date-fns";
-import AdvancedCanvas from "@/components/admin/dt/canvas/AdvancedCanvas";
-import NodeInspectorPanel from "@/components/admin/dt/inspector/NodeInspectorPanel";
-import TreeInspectorPanel from "@/components/admin/dt/inspector/TreeInspectorPanel";
+import AdvancedCanvas, { bfsLayout } from "@/components/admin/dt/canvas/AdvancedCanvas";
 import PreviewModal from "@/components/admin/dt/PreviewModal";
+import NodePreviewModal from "@/components/admin/dt/canvas/NodePreviewModal";
 import { validateTree } from "@/components/admin/dt/publishValidation";
 import { getCategoryForType } from "@/components/admin/dt/canvas/nodeCategories";
 import { Loader2 } from "lucide-react";
@@ -19,13 +18,17 @@ const STATUS_COLORS = {
   archived: "bg-gray-100 text-gray-500 border-gray-200",
 };
 
+const AUTO_LAYOUT_KEY = "cac_dt_autolayout_done_";
+const SHOW_ANSWERS_KEY = "cac_dt_show_answer_values";
+const THEME_KEY = "cac_dt_canvas_theme";
+
 function questionsToFlowNodes(questions) {
   return questions.map((q, idx) => ({
     id: q.node_id || q.id,
     type: "decision",
     position: {
-      x: q.position_x ?? (idx % 4) * 320 + 40,
-      y: q.position_y ?? Math.floor(idx / 4) * 220 + 40,
+      x: q.position_x ?? (idx % 4) * 340 + 100,
+      y: q.position_y ?? Math.floor(idx / 4) * 200 + 100,
     },
     data: { ...q, _dbId: q.id },
   }));
@@ -37,38 +40,52 @@ function edgesToFlowEdges(edges) {
     source: e.source_node_id,
     target: e.target_node_id,
     sourceHandle: e.source_handle || null,
-    targetHandle: e.target_handle || null,
+    targetHandle: e.target_handle || "target-left",
     type: "decision",
-    animated: e.animated ?? true,
+    animated: false,
+    markerEnd: { type: MarkerType.ArrowClosed, width: 16, height: 16 },
     data: {
       label: e.label,
       style_color: e.style_color,
       source_handle: e.source_handle || null,
+      target_is_dq: e.data?.target_is_dq,
+      target_is_qualified: e.data?.target_is_qualified,
       ...e,
     },
   }));
 }
 
-const ANSWER_NODE_TYPES = new Set(["single_select", "multiple_choice", "checkbox_multi_select", "dropdown"]);
-
-/** Given a connection, look up the answer option label for auto-labeling the edge. */
 function resolveEdgeLabel(connection, flowNodes) {
-  if (!connection.sourceHandle || connection.sourceHandle === "default") return null;
+  const src = connection.sourceHandle || "";
+  if (!src || src === "source-right") return null;
   const sourceNode = flowNodes.find((n) => n.id === connection.source);
   if (!sourceNode) return null;
-  const option = (sourceNode.data?.answer_options || []).find((o) => o.option_id === connection.sourceHandle);
-  return option?.label || null;
+  if (src.startsWith("answer-")) {
+    const optId = src.replace("answer-", "");
+    const option = (sourceNode.data?.answer_options || []).find((o) => o.option_id === optId);
+    return option?.label || null;
+  }
+  if (src.startsWith("path-")) {
+    const pathId = src.replace("path-", "");
+    if (pathId === "else") return "else";
+    const path = (sourceNode.data?.config?.paths || []).find((p) => p.path_id === pathId);
+    return path?.title || null;
+  }
+  if (src === "success") return "success";
+  if (src === "failure") return "failure";
+  return null;
 }
 
-/** Check if target node is a DQ or qualified outcome for edge coloring. */
 function resolveEdgeTargetMeta(targetNodeId, flowNodes) {
   const target = flowNodes.find((n) => n.id === targetNodeId);
   if (!target) return {};
-  const nodeType = target.data?.node_type;
   const tier = target.data?.config?.qualification_tier;
-  const isDq = tier === "DQ";
-  const isQualified = tier && tier !== "DQ";
-  return { target_is_dq: isDq, target_is_qualified: isQualified };
+  return { target_is_dq: tier === "DQ", target_is_qualified: tier && tier !== "DQ" };
+}
+
+function cleanNodeData(data) {
+  const { _dbId, _connectedHandles, _showAnswerHandles, _isDirty, _darkMode, onEdit, onDuplicate, onDelete, onPreview, ...rest } = data || {};
+  return rest;
 }
 
 export default function AdvancedBuilder() {
@@ -78,15 +95,24 @@ export default function AdvancedBuilder() {
 
   const [flowNodes, setFlowNodes] = useState([]);
   const [flowEdges, setFlowEdges] = useState([]);
-  const [selectedNodeId, setSelectedNodeId] = useState(null);
   const [savedAt, setSavedAt] = useState(null);
   const [pendingSave, setPendingSave] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [previewNode, setPreviewNode] = useState(null);
   const [showStatusMenu, setShowStatusMenu] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleVal, setTitleVal] = useState("");
   const [publishModal, setPublishModal] = useState(null);
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
+  const [autoLayoutToast, setAutoLayoutToast] = useState(false);
+  // Toolbar state synced from canvas
+  const [showAnswers, setShowAnswers] = useState(() => {
+    try { const v = localStorage.getItem(SHOW_ANSWERS_KEY); return v === null ? true : v === "true"; } catch { return true; }
+  });
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    try { return localStorage.getItem(THEME_KEY) === "dark"; } catch { return false; }
+  });
+
   const saveTimerRef = useRef(null);
   const historyRef = useRef({ past: [], future: [] });
 
@@ -110,11 +136,21 @@ export default function AdvancedBuilder() {
     queryFn: () => base44.entities.DecisionTreeBrand.list(),
   });
 
-  // Initialize flow state from DB
+  // Initialize flow state + auto-layout on first load
   useEffect(() => {
-    if (!loadingQ && !loadingE && dbQuestions.length >= 0) {
-      setFlowNodes(questionsToFlowNodes(dbQuestions));
-      setFlowEdges(edgesToFlowEdges(dbEdges));
+    if (!loadingQ && !loadingE) {
+      let nodes = questionsToFlowNodes(dbQuestions);
+      const edges = edgesToFlowEdges(dbEdges);
+      const layoutKey = AUTO_LAYOUT_KEY + quizId;
+      const alreadyDone = localStorage.getItem(layoutKey) === "1";
+      if (!alreadyDone && nodes.length > 0) {
+        nodes = bfsLayout(nodes, edges);
+        localStorage.setItem(layoutKey, "1");
+        setAutoLayoutToast(true);
+        setTimeout(() => setAutoLayoutToast(false), 4000);
+      }
+      setFlowNodes(nodes);
+      setFlowEdges(edges);
       if (quiz?.title) setTitleVal(quiz.title);
     }
   }, [loadingQ, loadingE]);
@@ -128,70 +164,39 @@ export default function AdvancedBuilder() {
     },
   });
 
-  // ---- Save logic ----
+  // Save
   const doSave = useCallback(async (nodes, edges) => {
     try {
-      // Upsert questions
-      const existingIds = new Set(dbQuestions.map((q) => q.node_id));
       for (const fn of nodes) {
         const nodeId = fn.id;
         const dbRec = dbQuestions.find((q) => q.node_id === nodeId);
-        const payload = {
-          ...fn.data,
-          quiz_id: quizId,
-          node_id: nodeId,
-          position_x: fn.position.x,
-          position_y: fn.position.y,
-          _dbId: undefined,
-          onEdit: undefined, onDuplicate: undefined, onDelete: undefined,
-        };
-        delete payload._dbId;
-        delete payload.onEdit;
-        delete payload.onDuplicate;
-        delete payload.onDelete;
-        if (dbRec) {
-          await base44.entities.Question.update(dbRec.id, payload);
-        } else {
-          await base44.entities.Question.create(payload);
-        }
+        const payload = { ...cleanNodeData(fn.data), quiz_id: quizId, node_id: nodeId, position_x: fn.position.x, position_y: fn.position.y };
+        if (dbRec) await base44.entities.Question.update(dbRec.id, payload);
+        else await base44.entities.Question.create(payload);
       }
-      // Delete removed questions
       const flowNodeIds = new Set(nodes.map((n) => n.id));
       for (const q of dbQuestions) {
         if (!flowNodeIds.has(q.node_id)) await base44.entities.Question.delete(q.id);
       }
-      // Upsert edges
-      const existingEdgeIds = new Set(dbEdges.map((e) => e.edge_id));
       for (const fe of edges) {
-        const edgeId = fe.id;
-        const dbRec = dbEdges.find((e) => e.edge_id === edgeId);
+        const dbRec = dbEdges.find((e) => e.edge_id === fe.id);
         const payload = {
-          quiz_id: quizId,
-          edge_id: edgeId,
-          source_node_id: fe.source,
-          target_node_id: fe.target,
-          source_handle: fe.sourceHandle || fe.data?.source_handle || "default",
-          target_handle: fe.targetHandle || "default",
+          quiz_id: quizId, edge_id: fe.id,
+          source_node_id: fe.source, target_node_id: fe.target,
+          source_handle: fe.sourceHandle || "source-right",
+          target_handle: "target-left",
           label: fe.data?.label || "",
-          animated: fe.animated ?? true,
+          animated: false,
           style_color: fe.data?.style_color || "#94a3b8",
         };
-        if (dbRec) {
-          await base44.entities.Edge.update(dbRec.id, payload);
-        } else {
-          await base44.entities.Edge.create(payload);
-        }
+        if (dbRec) await base44.entities.Edge.update(dbRec.id, payload);
+        else await base44.entities.Edge.create(payload);
       }
-      // Delete removed edges
       const flowEdgeIds = new Set(edges.map((e) => e.id));
       for (const e of dbEdges) {
         if (!flowEdgeIds.has(e.edge_id)) await base44.entities.Edge.delete(e.id);
       }
-      // Update counts
-      await base44.entities.Quiz.update(quizId, {
-        total_nodes: nodes.length,
-        total_edges: edges.length,
-      });
+      await base44.entities.Quiz.update(quizId, { total_nodes: nodes.length, total_edges: edges.length });
       qc.invalidateQueries(["questions", quizId]);
       qc.invalidateQueries(["edges", quizId]);
       setSavedAt(new Date());
@@ -213,7 +218,7 @@ export default function AdvancedBuilder() {
     historyRef.current.future = [];
   }, [flowNodes, flowEdges]);
 
-  // ---- React Flow handlers ----
+  // React Flow handlers
   const onNodesChange = useCallback((changes) => {
     setFlowNodes((nds) => {
       const updated = applyNodeChanges(changes, nds);
@@ -239,7 +244,8 @@ export default function AdvancedBuilder() {
         ...connection,
         id: crypto.randomUUID(),
         type: "decision",
-        animated: true,
+        animated: false,
+        markerEnd: { type: MarkerType.ArrowClosed, width: 16, height: 16 },
         data: {
           label: label || null,
           source_handle: connection.sourceHandle || null,
@@ -253,33 +259,26 @@ export default function AdvancedBuilder() {
     });
   }, [flowNodes, pushHistory, scheduleAutoSave]);
 
+  const onEdgeDelete = useCallback(() => {
+    scheduleAutoSave(flowNodes, flowEdges);
+  }, [flowNodes, flowEdges, scheduleAutoSave]);
+
   const onDropNode = useCallback((nodeType, position) => {
     pushHistory();
     const nodeId = crypto.randomUUID();
     const { typeDef } = getCategoryForType(nodeType);
     const newNode = {
-      id: nodeId,
-      type: "decision",
-      position,
+      id: nodeId, type: "decision", position,
       data: {
-        node_id: nodeId,
-        quiz_id: quizId,
-        node_type: nodeType,
-        label: typeDef.label,
-        title_display: "",
-        required: true,
+        node_id: nodeId, quiz_id: quizId, node_type: nodeType, label: typeDef.label,
+        title_display: "", required: true,
         answer_options: ["single_select", "multiple_choice", "checkbox_multi_select", "dropdown"].includes(nodeType)
           ? [
               { option_id: crypto.randomUUID(), label: "Option 1", value: "option_1", is_dq: false, score: 0, tags_to_add: [], tags_to_remove: [], custom_field_overrides: {} },
               { option_id: crypto.randomUUID(), label: "Option 2", value: "option_2", is_dq: false, score: 0, tags_to_add: [], tags_to_remove: [], custom_field_overrides: {} },
             ]
           : [],
-        custom_field_assignments: [],
-        tags_to_add: [],
-        tags_to_remove: [],
-        scripts: [],
-        validation_rules: [],
-        config: {},
+        custom_field_assignments: [], tags_to_add: [], tags_to_remove: [], scripts: [], validation_rules: [], config: {},
       },
     };
     setFlowNodes((nds) => {
@@ -287,15 +286,13 @@ export default function AdvancedBuilder() {
       scheduleAutoSave(updated, flowEdges);
       return updated;
     });
-    setSelectedNodeId(nodeId);
   }, [quizId, flowEdges, pushHistory, scheduleAutoSave]);
 
   const onDuplicateNode = useCallback((node) => {
     pushHistory();
     const newId = crypto.randomUUID();
     const dup = {
-      ...node,
-      id: newId,
+      ...node, id: newId,
       position: { x: node.position.x + 40, y: node.position.y + 40 },
       data: { ...node.data, node_id: newId, label: (node.data.label || "") + " (Copy)" },
     };
@@ -317,197 +314,213 @@ export default function AdvancedBuilder() {
       });
       return updated;
     });
-    if (selectedNodeId === nodeId) setSelectedNodeId(null);
-  }, [selectedNodeId, pushHistory, scheduleAutoSave]);
+  }, [pushHistory, scheduleAutoSave]);
 
-  const onNodeClick = useCallback((node) => {
-    setSelectedNodeId(node.id);
-  }, []);
+  const onPreviewNode = useCallback((node) => setPreviewNode(node), []);
 
-  const onPaneClick = useCallback(() => {
-    setSelectedNodeId(null);
-  }, []);
-
-  // ---- Node data update (inspector changes) ----
-  const onUpdateNodeData = useCallback((patch) => {
+  // Run auto-layout manually (from Controls button)
+  const handleRunAutoLayout = useCallback(() => {
     setFlowNodes((nds) => {
-      const updated = nds.map((n) =>
-        n.id === selectedNodeId ? { ...n, data: { ...n.data, ...patch } } : n
-      );
-      scheduleAutoSave(updated, flowEdges);
-      return updated;
+      const relaid = bfsLayout(nds, flowEdges);
+      scheduleAutoSave(relaid, flowEdges);
+      return relaid;
     });
-  }, [selectedNodeId, flowEdges, scheduleAutoSave]);
+  }, [flowEdges, scheduleAutoSave]);
 
-  // ---- Keyboard shortcuts ----
+  // Keyboard shortcuts
   useEffect(() => {
     const handler = (e) => {
       const ctrl = e.ctrlKey || e.metaKey;
       if (ctrl && e.key === "z" && !e.shiftKey) {
         e.preventDefault();
-        if (historyRef.current.past.length === 0) return;
+        if (!historyRef.current.past.length) return;
         const prev = historyRef.current.past.pop();
         historyRef.current.future.push({ nodes: flowNodes, edges: flowEdges });
-        setFlowNodes(prev.nodes);
-        setFlowEdges(prev.edges);
+        setFlowNodes(prev.nodes); setFlowEdges(prev.edges);
       }
       if (ctrl && (e.key === "y" || (e.key === "z" && e.shiftKey))) {
         e.preventDefault();
-        if (historyRef.current.future.length === 0) return;
+        if (!historyRef.current.future.length) return;
         const next = historyRef.current.future.pop();
         historyRef.current.past.push({ nodes: flowNodes, edges: flowEdges });
-        setFlowNodes(next.nodes);
-        setFlowEdges(next.edges);
+        setFlowNodes(next.nodes); setFlowEdges(next.edges);
       }
       if (ctrl && e.key === "s") {
         e.preventDefault();
         if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
         doSave(flowNodes, flowEdges);
       }
-      if (ctrl && e.key === "p") {
-        e.preventDefault();
-        setShowPreview(true);
-      }
+      if (ctrl && e.key === "p") { e.preventDefault(); setShowPreview(true); }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [flowNodes, flowEdges, doSave]);
 
-  // ---- Publish ----
+  // Publish
   const handlePublish = useCallback(async () => {
     const { valid, errors } = validateTree(quiz, dbQuestions, dbEdges);
-    if (!valid) {
-      setPublishModal({ errors });
-      return;
-    }
+    if (!valid) { setPublishModal({ errors }); return; }
     const user = await base44.auth.me();
     const newVersion = (quiz?.version || 1) + 1;
     const snapshot = {
-      version: newVersion,
-      published_at: new Date().toISOString(),
-      published_by: user?.email || "admin",
-      nodes_snapshot: dbQuestions,
-      edges_snapshot: dbEdges,
+      version: newVersion, published_at: new Date().toISOString(),
+      published_by: user?.email || "admin", nodes_snapshot: dbQuestions, edges_snapshot: dbEdges,
     };
-    const history = [...(quiz?.version_history || []), snapshot];
     await base44.entities.Quiz.update(quizId, {
-      status: "published",
-      version: newVersion,
-      published_at: snapshot.published_at,
-      published_by: snapshot.published_by,
-      version_history: history,
+      status: "published", version: newVersion,
+      published_at: snapshot.published_at, published_by: snapshot.published_by,
+      version_history: [...(quiz?.version_history || []), snapshot],
     });
     qc.invalidateQueries(["quiz", quizId]);
     setSavedAt(new Date());
   }, [quiz, dbQuestions, dbEdges, quizId, qc]);
 
-  const selectedFlowNode = flowNodes.find((n) => n.id === selectedNodeId);
-  const selectedNodeData = selectedFlowNode ? { ...selectedFlowNode.data, id: selectedFlowNode.id } : null;
+  // Toggle helpers (toolbar mirrors canvas state)
+  const toggleAnswers = useCallback(() => {
+    setShowAnswers((prev) => {
+      const next = !prev;
+      try { localStorage.setItem(SHOW_ANSWERS_KEY, String(next)); } catch {}
+      return next;
+    });
+  }, []);
+
+  const toggleDark = useCallback(() => {
+    setIsDarkMode((prev) => {
+      const next = !prev;
+      try { localStorage.setItem(THEME_KEY, next ? "dark" : "light"); } catch {}
+      return next;
+    });
+  }, []);
+
+  const undo = useCallback(() => {
+    if (!historyRef.current.past.length) return;
+    const prev = historyRef.current.past.pop();
+    historyRef.current.future.push({ nodes: flowNodes, edges: flowEdges });
+    setFlowNodes(prev.nodes); setFlowEdges(prev.edges);
+  }, [flowNodes, flowEdges]);
+
+  const redo = useCallback(() => {
+    if (!historyRef.current.future.length) return;
+    const next = historyRef.current.future.pop();
+    historyRef.current.past.push({ nodes: flowNodes, edges: flowEdges });
+    setFlowNodes(next.nodes); setFlowEdges(next.edges);
+  }, [flowNodes, flowEdges]);
 
   if (loadingQuiz || loadingQ || loadingE) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
-      </div>
-    );
+    return <div className="flex items-center justify-center h-screen"><Loader2 className="w-8 h-8 animate-spin text-slate-400" /></div>;
   }
-
   if (!quiz) return <div className="p-8 text-slate-500">Decision tree not found.</div>;
 
   const brand = brands.find((b) => b.id === quiz.brand_id);
 
   return (
-    <div className="flex flex-col h-screen bg-slate-50 overflow-hidden -m-4 sm:-m-6 lg:-m-8">
+    <div className={`flex flex-col h-screen overflow-hidden -m-4 sm:-m-6 lg:-m-8 ${isDarkMode ? "bg-slate-950" : "bg-slate-50"}`}>
       {/* Top bar */}
-      <div className="flex items-center gap-2 px-4 h-14 bg-white border-b border-slate-200 flex-shrink-0 min-w-0">
+      <div className={`flex items-center gap-2 px-3 h-12 border-b flex-shrink-0 ${isDarkMode ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200"}`}>
         <button onClick={() => navigate("/admin/decision-trees")} className="p-1.5 rounded hover:bg-slate-100 transition-colors flex-shrink-0">
           <ArrowLeft className="w-4 h-4 text-slate-500" />
         </button>
 
-        <span className="text-sm text-slate-400 hidden sm:block flex-shrink-0">Decision Trees /</span>
+        <span className={`text-xs hidden sm:block flex-shrink-0 ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>Trees /</span>
 
         {editingTitle ? (
           <input autoFocus value={titleVal}
             onChange={(e) => setTitleVal(e.target.value)}
             onBlur={() => { setEditingTitle(false); if (titleVal !== quiz.title) updateQuizMut.mutate({ title: titleVal }); }}
             onKeyDown={(e) => { if (e.key === "Enter") e.target.blur(); }}
-            className="text-sm font-semibold bg-transparent border-b border-blue-500 outline-none px-0 min-w-[120px]" />
+            className={`text-sm font-semibold bg-transparent border-b border-blue-500 outline-none px-0 min-w-[120px] ${isDarkMode ? "text-white" : "text-slate-800"}`} />
         ) : (
           <button onClick={() => { setEditingTitle(true); setTitleVal(quiz.title || ""); }}
-            className="text-sm font-semibold text-slate-800 hover:text-blue-600 transition-colors truncate max-w-[180px]">
+            className={`text-sm font-semibold hover:text-blue-500 transition-colors truncate max-w-[160px] ${isDarkMode ? "text-slate-200" : "text-slate-800"}`}>
             {quiz.title}
           </button>
         )}
 
         {brand && (
-          <span className="hidden sm:inline-flex items-center gap-1 text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded flex-shrink-0">
+          <span className={`hidden sm:inline-flex items-center text-xs px-2 py-0.5 rounded flex-shrink-0 ${isDarkMode ? "bg-slate-800 text-slate-400" : "bg-slate-100 text-slate-500"}`}>
             {brand.brand_name}
           </span>
         )}
 
-        {/* Mode toggle */}
-        <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1 ml-2 flex-shrink-0">
-          <button onClick={() => navigate(`/admin/decision-trees/${quizId}/edit`)}
-            className="px-2.5 py-1 text-xs text-slate-500 rounded-md hover:bg-white transition-colors">
-            Basic
-          </button>
-          <span className="px-2.5 py-1 text-xs font-semibold bg-white rounded-md shadow-sm text-slate-800">
-            Advanced
-          </span>
-        </div>
+        {/* Divider */}
+        <div className={`h-5 w-px mx-1 flex-shrink-0 ${isDarkMode ? "bg-slate-700" : "bg-slate-200"}`} />
+
+        {/* Canvas controls group */}
+        <button
+          onClick={toggleAnswers}
+          className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors flex-shrink-0 ${
+            showAnswers
+              ? "bg-blue-600 text-white"
+              : isDarkMode ? "bg-slate-800 text-slate-400 hover:bg-slate-700" : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+          }`}
+          title="Toggle answer rows"
+        >
+          Answers {showAnswers ? "ON" : "OFF"}
+        </button>
+
+        <button
+          onClick={toggleDark}
+          className={`p-1.5 rounded transition-colors flex-shrink-0 ${isDarkMode ? "text-amber-400 hover:bg-slate-800" : "text-slate-500 hover:bg-slate-100"}`}
+          title={isDarkMode ? "Light mode" : "Dark mode"}
+        >
+          {isDarkMode ? <Sun size={14} /> : <Moon size={14} />}
+        </button>
+
+        <button onClick={undo} title="Undo" className={`p-1.5 rounded transition-colors flex-shrink-0 ${isDarkMode ? "text-slate-400 hover:bg-slate-800" : "text-slate-500 hover:bg-slate-100"}`}>
+          <RotateCcw size={13} />
+        </button>
+        <button onClick={redo} title="Redo" className={`p-1.5 rounded transition-colors flex-shrink-0 ${isDarkMode ? "text-slate-400 hover:bg-slate-800" : "text-slate-500 hover:bg-slate-100"}`}>
+          <RotateCw size={13} />
+        </button>
 
         <div className="flex-1" />
 
+        {/* Right actions */}
         <button onClick={() => setShowPreview(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 text-sm hover:bg-slate-50 transition-colors flex-shrink-0">
-          <Eye className="w-4 h-4" /> Preview
+          className={`flex items-center gap-1 px-2.5 py-1.5 rounded border text-xs hover:bg-slate-50 transition-colors flex-shrink-0 ${isDarkMode ? "border-slate-700 text-slate-300 hover:bg-slate-800" : "border-slate-200 text-slate-600"}`}>
+          <Eye size={13} /> Preview
         </button>
 
-        <button onClick={() => {
-          const url = `${window.location.origin}/q/${quiz.slug}`;
-          navigator.clipboard.writeText(url);
-        }}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 text-sm hover:bg-slate-50 transition-colors flex-shrink-0">
-          <ExternalLink className="w-4 h-4" />
+        <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/q/${quiz.slug}`); }}
+          className={`p-1.5 rounded border transition-colors flex-shrink-0 ${isDarkMode ? "border-slate-700 text-slate-400 hover:bg-slate-800" : "border-slate-200 text-slate-500 hover:bg-slate-50"}`}
+          title="Copy public URL">
+          <ExternalLink size={13} />
         </button>
 
-        {/* Status */}
         <div className="relative flex-shrink-0">
           <button onClick={() => setShowStatusMenu(!showStatusMenu)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold ${STATUS_COLORS[quiz.status] || STATUS_COLORS.draft}`}>
+            className={`flex items-center gap-1 px-2.5 py-1.5 rounded border text-xs font-semibold ${STATUS_COLORS[quiz.status] || STATUS_COLORS.draft}`}>
             {quiz.status || "draft"} <span>▾</span>
           </button>
           {showStatusMenu && (
-            <div className="absolute right-0 top-10 z-50 w-36 bg-white border border-slate-200 rounded-lg shadow-lg py-1" onClick={() => setShowStatusMenu(false)}>
-              {["draft","published","archived"].map((s) => (
+            <div className="absolute right-0 top-9 z-50 w-32 bg-white border border-slate-200 rounded-lg shadow-lg py-1" onClick={() => setShowStatusMenu(false)}>
+              {["draft", "published", "archived"].map((s) => (
                 <button key={s} onClick={() => updateQuizMut.mutate({ status: s })}
-                  className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 capitalize transition-colors">
-                  {s}
-                </button>
+                  className="w-full text-left px-3 py-1.5 text-sm hover:bg-slate-50 capitalize">{s}</button>
               ))}
             </div>
           )}
         </div>
 
-        {/* Save indicator */}
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex items-center gap-1.5 flex-shrink-0">
           {pendingSave ? (
-            <span className="flex items-center gap-1 text-xs text-slate-400"><Clock className="w-3 h-3" /> Unsaved</span>
+            <span className="flex items-center gap-1 text-xs text-slate-400"><Clock size={11} /> Unsaved</span>
           ) : savedAt ? (
-            <span className="flex items-center gap-1 text-xs text-green-600"><CheckCircle2 className="w-3 h-3" /> {format(savedAt, "HH:mm:ss")}</span>
+            <span className="flex items-center gap-1 text-xs text-green-600"><CheckCircle2 size={11} /> {format(savedAt, "HH:mm:ss")}</span>
           ) : null}
-          <button onClick={() => { if (saveTimerRef.current) clearTimeout(saveTimerRef.current); doSave(flowNodes, flowEdges); }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 text-sm hover:bg-slate-50 transition-colors">
-            <Save className="w-4 h-4" /> Save
+          <button
+            onClick={() => { if (saveTimerRef.current) clearTimeout(saveTimerRef.current); doSave(flowNodes, flowEdges); }}
+            className={`flex items-center gap-1 px-2.5 py-1.5 rounded border text-xs transition-colors ${isDarkMode ? "border-slate-700 text-slate-300 hover:bg-slate-800" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}>
+            <Save size={13} /> Save
           </button>
           <button onClick={handlePublish}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700 transition-colors">
-            <Zap className="w-4 h-4" /> Publish
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded bg-blue-600 text-white text-xs hover:bg-blue-700 transition-colors">
+            <Zap size={13} /> Publish
           </button>
         </div>
       </div>
 
-      {/* Main layout */}
+      {/* Full-width canvas */}
       <div className="flex flex-1 overflow-hidden">
         <AdvancedCanvas
           nodes={flowNodes}
@@ -515,42 +528,45 @@ export default function AdvancedBuilder() {
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
-          onNodeClick={onNodeClick}
-          onPaneClick={onPaneClick}
+          onPaneClick={() => {}}
           onDropNode={onDropNode}
           onDuplicateNode={onDuplicateNode}
           onDeleteNode={onDeleteNode}
+          onEdgeDelete={onEdgeDelete}
+          onPreviewNode={onPreviewNode}
           reactFlowInstance={reactFlowInstance}
           setReactFlowInstance={setReactFlowInstance}
+          quiz={quiz}
+          quizId={quizId}
+          brands={brands}
+          onUpdateQuiz={(data) => updateQuizMut.mutate(data)}
+          onRunAutoLayout={handleRunAutoLayout}
+          onToolbarStateChange={({ showAnswers: sa, isDarkMode: dm }) => {
+            setShowAnswers(sa);
+            setIsDarkMode(dm);
+          }}
         />
-
-        {/* Right inspector */}
-        {selectedNodeData ? (
-          <NodeInspectorPanel
-            node={selectedNodeData}
-            quiz={quiz}
-            quizId={quizId}
-            allNodes={flowNodes.map((n) => ({ ...n.data, id: n.id }))}
-            allEdges={flowEdges}
-            onUpdate={onUpdateNodeData}
-            onClose={() => setSelectedNodeId(null)}
-          />
-        ) : (
-          <TreeInspectorPanel
-            quiz={quiz}
-            quizId={quizId}
-            brands={brands}
-            onUpdateQuiz={(data) => updateQuizMut.mutate(data)}
-          />
-        )}
       </div>
 
-      {/* Preview */}
+      {/* Auto-layout toast */}
+      {autoLayoutToast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-slate-800 text-white text-xs px-4 py-2.5 rounded-lg shadow-xl">
+          Canvas updated to left-to-right flow. Positions auto-arranged once.
+        </div>
+      )}
+
+      {/* Full tree preview */}
       {showPreview && (
-        <PreviewModal
-          nodes={dbQuestions}
-          quiz={quiz}
-          onClose={() => setShowPreview(false)}
+        <PreviewModal nodes={dbQuestions} quiz={quiz} onClose={() => setShowPreview(false)} />
+      )}
+
+      {/* Single node preview */}
+      {previewNode && (
+        <NodePreviewModal
+          node={{ ...previewNode.data, id: previewNode.id }}
+          allNodes={flowNodes.map((n) => ({ ...n.data, id: n.id }))}
+          allEdges={flowEdges}
+          onClose={() => setPreviewNode(null)}
         />
       )}
 
@@ -562,12 +578,12 @@ export default function AdvancedBuilder() {
             <ul className="space-y-1.5">
               {publishModal.errors.map((err, i) => (
                 <li key={i} className="flex items-start gap-2 text-sm text-red-700 bg-red-50 rounded-lg p-2.5">
-                  <span className="text-red-500 font-bold flex-shrink-0">!</span> {err}
+                  <span className="flex-shrink-0 font-bold">!</span> {err}
                 </li>
               ))}
             </ul>
             <button onClick={() => setPublishModal(null)}
-              className="w-full py-2 rounded-lg bg-slate-100 text-sm font-medium text-slate-700 hover:bg-slate-200 transition-colors">
+              className="w-full py-2 rounded-lg bg-slate-100 text-sm font-medium hover:bg-slate-200 transition-colors">
               Close and Fix Issues
             </button>
           </div>

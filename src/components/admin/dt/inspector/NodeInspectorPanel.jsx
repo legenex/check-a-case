@@ -31,7 +31,7 @@ function buildTabs(node) {
   return tabs;
 }
 
-export default function NodeInspectorPanel({ node, quiz, quizId, allNodes, allEdges, onUpdate, onClose }) {
+export default function NodeInspectorPanel({ node, quiz, quizId, allNodes, allEdges, onUpdate, onClose, isDirty, onSave, onDiscard }) {
   const [activeTab, setActiveTab] = useState("properties");
   const tabs = buildTabs(node);
   const currentTab = tabs.find((t) => t.id === activeTab) ? activeTab : tabs[0]?.id;
@@ -65,6 +65,16 @@ export default function NodeInspectorPanel({ node, quiz, quizId, allNodes, allEd
           </button>
         ))}
       </div>
+
+      {/* Dirty save bar */}
+      {isDirty && (
+        <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border-b border-amber-200 flex-shrink-0">
+          <span className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0" />
+          <span className="text-xs text-amber-700 flex-1">Unsaved changes</span>
+          <button onClick={onDiscard} className="text-xs text-slate-500 hover:text-slate-800 px-2 py-1 rounded hover:bg-slate-100 transition-colors">Discard</button>
+          <button onClick={onSave} className="text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 px-2.5 py-1 rounded transition-colors">Save</button>
+        </div>
+      )}
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-4">
