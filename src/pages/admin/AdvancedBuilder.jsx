@@ -4,16 +4,16 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import {
   ArrowLeft, Sun, Moon, RotateCcw, RotateCw, LayoutGrid,
-  AlertCircle, Play, Download, HelpCircle, Zap, CheckCircle2, Clock
+  AlertCircle, Play, Download, HelpCircle, Zap, CheckCircle2
 } from "lucide-react";
 import { Loader2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 
-import HandRolledCanvas from "@/components/admin/dt/canvas/HandRolledCanvas";
-import NodeLibrary from "@/components/admin/dt/canvas/NodeLibrary";
+import DesignCanvas from "@/components/admin/dt/canvas/DesignCanvas";
+import DesignLibrary from "@/components/admin/dt/canvas/DesignLibrary";
 import TestModePanel from "@/components/admin/dt/canvas/TestModePanel";
 import ValidationPopover from "@/components/admin/dt/canvas/ValidationPopover";
-import { NODE_REGISTRY, designType, persistType, getNodeOutputs } from "@/components/admin/dt/canvas/nodeRegistry";
+import { persistType } from "@/components/admin/dt/canvas/nodeTypes";
 import NodeInspectorPanel from "@/components/admin/dt/inspector/NodeInspectorPanel";
 
 const THEME_KEY = "cac_dt_canvas_theme";
@@ -22,6 +22,7 @@ const SAVE_DEBOUNCE = 800;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+// ── Translation helpers kept in sync with nodeTypes.js ───────────────────────
 function questionsToNodes(questions) {
   return questions.map((q, idx) => ({
     id: q.node_id || q.id,
@@ -63,7 +64,7 @@ function bfsLayout(nodes, edges) {
   const adj = {};
   for (const n of nodes) adj[n.id] = [];
   for (const e of edges) { if (adj[e.source]) adj[e.source].push(e.target); }
-  const startNode = nodes.find((n) => designType(n) === "start") || nodes[0];
+  const startNode = nodes.find((n) => n.node_type === "start_page") || nodes[0];
   const visited = new Set();
   const depthMap = {};
   const queue = [{ id: startNode.id, depth: 0 }];
@@ -387,27 +388,21 @@ export default function AdvancedBuilder() {
 
   // ── Node operations ───────────────────────────────────────────────────────────
 
-  const onNodesChange = useCallback((changes) => {
+  // Direct position set (from DesignCanvas drag)
+  const onMoveNode = useCallback((nodeId, pos) => {
     setNodes((prev) => {
-      const updated = prev.map((n) => {
-        const ch = changes.find((c) => c.id === n.id);
-        if (!ch) return n;
-        if (ch.type === "move") return { ...n, position: { x: n.position.x + ch.dx, y: n.position.y + ch.dy } };
-        return n;
-      });
+      const updated = prev.map((n) => n.id === nodeId ? { ...n, position: pos } : n);
       bumpSave(updated, edgesRef.current);
       return updated;
     });
   }, [bumpSave]);
 
   const onCanvasDrop = useCallback((typeKey, wx, wy, connectFrom, extraConfig) => {
-    const def = NODE_REGISTRY[typeKey];
-    if (!def) return;
     const nodeId = crypto.randomUUID();
     const { node_type, config } = persistType(typeKey, extraConfig || {});
     const newNode = {
       id: nodeId,
-      label: def.label,
+      label: node_type,
       node_type,
       position: { x: wx, y: wy },
       title_display: "", help_text: "", placeholder: "", required: true,
@@ -812,19 +807,27 @@ export default function AdvancedBuilder() {
         <div className="flex flex-1 overflow-hidden relative">
 
           {/* LIBRARY */}
-          <NodeLibrary isDark={isDark} collapsed={libraryCollapsed} onToggle={() => setLibraryCollapsed((v) => !v)} />
+          <DesignLibrary isLight={!isDark} collapsed={libraryCollapsed} onToggle={() => setLibraryCollapsed((v) => !v)} />
 
           {/* CANVAS */}
-          <HandRolledCanvas
+          <DesignCanvas
             nodes={nodes}
             edges={edges}
             selection={selection}
-            isDark={isDark}
+            isLight={!isDark}
             testNodeId={testNodeId}
             testTraversedNodes={testTraversedNodes}
             selectedEdgeId={selectedEdgeId}
-            onNodesChange={onNodesChange}
-            onSelect={onNodeSingleSelect}
+            onMoveNode={onMoveNode}
+            onSelect={(ids, additive) => {
+              if (!Array.isArray(ids)) ids = [ids];
+              setSelection(additive ? (s) => [...new Set([...s, ...ids])] : ids);
+              setSelectedEdgeId(null);
+              if (!additive && ids.length === 1) {
+                const n = nodesRef.current.find((x) => x.id === ids[0]);
+                if (n) setEditingNode(n);
+              }
+            }}
             onClearSelection={onClearSelection}
             onSelectAll={onSelectAll}
             onDeleteSelected={onDeleteSelected}

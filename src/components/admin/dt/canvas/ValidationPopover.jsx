@@ -1,7 +1,6 @@
 import React, { useMemo } from "react";
 import { CheckCircle2, AlertCircle } from "lucide-react";
-import { NODE_W } from "./CanvasNode";
-import { designType } from "./nodeRegistry";
+import { designType } from "./nodeTypes";
 
 function computeValidation(nodes, edges) {
   const issues = [];

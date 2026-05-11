@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from "react";
 import { X, ChevronRight } from "lucide-react";
-import { designType, getNodeOutputs } from "./nodeRegistry";
+import { designType, getNodeOutputs } from "./nodeTypes";
 
 export default function TestModePanel({ nodes, edges, startNodeId, isDark, onClose, onJumpToNode }) {
   const [currentNodeId, setCurrentNodeId] = useState(startNodeId || nodes.find((n) => designType(n) === "start")?.id || nodes[0]?.id);
