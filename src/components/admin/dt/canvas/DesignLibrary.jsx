@@ -73,8 +73,8 @@ export default function DesignLibrary({ isLight, collapsed, onToggle, onOpenTemp
 
   const chromeBg = isLight ? "rgba(252,251,248,0.92)" : "rgba(20,20,24,0.92)";
   const borderC = isLight ? "rgba(0,0,0,0.07)" : "rgba(255,255,255,0.06)";
-  const textS = isLight ? "#64748b" : "#94a3b8";
-  const textP = isLight ? "#0f172a" : "#e2e8f0";
+  const textS = isLight ? "#64748b" : "#e2e8f0";
+  const textP = isLight ? "#0f172a" : "#ffffff";
 
   const byCategory = {};
   for (const cat of CATEGORIES) byCategory[cat] = [];
