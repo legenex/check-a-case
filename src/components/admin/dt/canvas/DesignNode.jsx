@@ -60,16 +60,24 @@ function NodeTitle({ title, onChange, className }) {
   );
 }
 
-function OutputRow({ label, accentHex, isLight, showLabel, onStart, nodeId, handleId }) {
+function OutputRow({ label, accentHex, isLight, showLabel, onOutputClick, nodeId, handleId, pendingConnect }) {
+  const isArmed = pendingConnect?.sourceId === nodeId && pendingConnect?.sourceHandle === handleId;
   return (
-    <div className="cc-no-drag relative flex items-center justify-end gap-2 px-3.5 py-1.5 group cursor-crosshair"
-         onPointerDown={(e) => { e.stopPropagation(); onStart(e); }}>
+    <div className="cc-no-drag relative flex items-center justify-end gap-2 px-3.5 py-1.5 group cursor-pointer"
+         onClick={(e) => { e.stopPropagation(); onOutputClick(e, nodeId, handleId, accentHex); }}>
       {showLabel && (
         <span className={`text-[11px] font-medium truncate ${isLight ? "text-slate-600 group-hover:text-slate-900" : "text-zinc-400 group-hover:text-zinc-100"}`}
               style={{ maxWidth: 180 }} title={label}>{label}</span>
       )}
-      <span className="cc-handle w-3 h-3 rounded-full border-2 absolute right-0 translate-x-1/2"
-            style={{ background: accentHex, borderColor: isLight ? "#fff" : "#1c1c22", pointerEvents: "auto", zIndex: 20 }}
+      <span className="cc-handle w-3 h-3 rounded-full border-2 absolute right-0 translate-x-1/2 transition-all"
+            style={{
+              background: accentHex,
+              borderColor: isLight ? "#fff" : "#1c1c22",
+              pointerEvents: "auto",
+              zIndex: 20,
+              boxShadow: isArmed ? `0 0 0 4px ${accentHex}55, 0 0 12px 2px ${accentHex}88` : undefined,
+              animation: isArmed ? "ccPulse 1.2s ease-in-out infinite" : undefined,
+            }}
             data-handle-output="true"
             data-node-id={nodeId}
             data-handle-id={handleId} />
@@ -215,8 +223,9 @@ function NodeBody({ node, subColor, accentHex, isLight, dt }) {
 export default function DesignNode({
   node, isLight, selected, testActive, testTraversed,
   validation, scale = 1,
-  onSelect, onMove, onStartConnect, onConnectEnd, onTitleChange,
+  onSelect, onMove, onOutputClick, onInputClick, onTitleChange,
   onDeleteNode, onDuplicateNode,
+  pendingConnect,
 }) {
   const visual = getNodeVisual(node);
   const dt = visual.dt;
@@ -263,6 +272,9 @@ export default function DesignNode({
   const titleColor = isLight ? "#0f172a" : "#fafafa";
   const subColor = isLight ? "#64748b" : "#71717a";
   const secondaryText = isLight ? "#94a3b8" : "#52525b";
+  const nodeBodyText = isLight ? "#64748b" : "#a1a1aa";
+  const nodeTypeLabel = accentHex;
+  const nodeIdText = isLight ? "#94a3b8" : "#71717a";
 
   const selectedShadow = selected
     ? `0 0 0 2px ${accentHex}, 0 10px 30px -10px ${accentHex}55`
@@ -369,13 +381,14 @@ export default function DesignNode({
               title={node.label || def.label}
               onChange={(v) => onTitleChange?.(node.id, v)}
               className="text-[13.5px] font-semibold leading-tight"
+              style={{ color: titleColor }}
             />
             <div className="mt-0.5 flex items-center gap-1.5">
-              <span className="text-[10px] uppercase tracking-[0.08em] font-medium" style={{ color: accentHex }}>
+              <span className="text-[10px] uppercase tracking-[0.08em] font-medium" style={{ color: nodeTypeLabel }}>
                 {visual.label.toUpperCase()}
               </span>
-              <span className="text-[10px]" style={{ color: secondaryText }}>·</span>
-              <span className="text-[9.5px] font-mono" style={{ color: secondaryText }}>
+              <span className="text-[10px]" style={{ color: nodeIdText }}>·</span>
+              <span className="text-[9.5px] font-mono" style={{ color: nodeIdText }}>
                 {node.id.slice(0, 8)}
               </span>
             </div>
@@ -416,10 +429,22 @@ export default function DesignNode({
         {/* Input handle — left edge, centered */}
         {!isStart && !isNote && (
           <div
-            className="cc-handle absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 w-3 h-3 rounded-full border-2"
-            style={{ background: isLight ? "#fff" : "#1c1c22", borderColor: accentHex, pointerEvents: "auto", zIndex: 20 }}
+            className="cc-handle absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 w-3 h-3 rounded-full border-2 cursor-pointer transition-all"
+            style={{
+              background: isLight ? "#fff" : "#1c1c22",
+              borderColor: accentHex,
+              pointerEvents: "auto",
+              zIndex: 20,
+              boxShadow: pendingConnect && pendingConnect.sourceId !== node.id
+                ? `0 0 0 4px #10b98155, 0 0 12px 2px #10b98188`
+                : undefined,
+              animation: pendingConnect && pendingConnect.sourceId !== node.id
+                ? "ccPulse 1.2s ease-in-out infinite"
+                : undefined,
+            }}
             data-handle-input="true"
             data-node-id={node.id}
+            onClick={(e) => onInputClick(e, node.id)}
           />
         )}
 
@@ -435,7 +460,8 @@ export default function DesignNode({
                 showLabel
                 nodeId={node.id}
                 handleId={o.id}
-                onStart={(e) => onStartConnect(e, node.id, o.id, accentHex)}
+                onOutputClick={onOutputClick}
+                pendingConnect={pendingConnect}
               />
             ))}
           </div>
@@ -444,16 +470,23 @@ export default function DesignNode({
         {/* Single-output handle — right edge centered (no label row) */}
         {singleOutputNoLabel && (
           <div
-            className="cc-handle absolute right-0 top-1/2 translate-x-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2"
-            style={{ background: accentHex, borderColor: isLight ? "#fff" : "#1c1c22", pointerEvents: "auto", zIndex: 20 }}
+            className="cc-handle absolute right-0 top-1/2 translate-x-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2 cursor-pointer transition-all"
+            style={{
+              background: accentHex,
+              borderColor: isLight ? "#fff" : "#1c1c22",
+              pointerEvents: "auto",
+              zIndex: 20,
+              boxShadow: pendingConnect?.sourceId === node.id && pendingConnect?.sourceHandle === outs[0].id
+                ? `0 0 0 4px ${accentHex}55, 0 0 12px 2px ${accentHex}88`
+                : undefined,
+              animation: pendingConnect?.sourceId === node.id && pendingConnect?.sourceHandle === outs[0].id
+                ? "ccPulse 1.2s ease-in-out infinite"
+                : undefined,
+            }}
             data-handle-output="true"
             data-node-id={node.id}
             data-handle-id={outs[0].id}
-            onPointerDown={(e) => {
-              e.stopPropagation();
-              e.preventDefault();
-              onStartConnect(e, node.id, outs[0].id, accentHex);
-            }}
+            onClick={(e) => onOutputClick(e, node.id, outs[0].id, accentHex)}
           />
         )}
 
@@ -467,7 +500,8 @@ export default function DesignNode({
               showLabel
               nodeId={node.id}
               handleId={outs[0].id}
-              onStart={(e) => onStartConnect(e, node.id, outs[0].id, accentHex)}
+              onOutputClick={onOutputClick}
+              pendingConnect={pendingConnect}
             />
           </div>
         )}

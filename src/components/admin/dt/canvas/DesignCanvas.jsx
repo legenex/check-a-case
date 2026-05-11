@@ -30,11 +30,13 @@ export default function DesignCanvas({
   const [ghostEdge, setGhostEdge] = useState(null);
   const [quickAdd, setQuickAdd] = useState(null);
   const [marquee, setMarquee] = useState(null);
+  const [pendingConnect, setPendingConnect] = useState(null);
+  const [cursorWorld, setCursorWorld] = useState(null);
+  const [lastScreenCursor, setLastScreenCursor] = useState({ x: 0, y: 0 });
 
   const dragRef = useRef(null);
   const panRef = useRef(null);
   const marqueeRef = useRef(null);
-  const connectRef = useRef(null);
 
   // Space key for pan
   useEffect(() => {
@@ -44,6 +46,18 @@ export default function DesignCanvas({
     window.addEventListener("keyup", up);
     return () => { window.removeEventListener("keydown", dn); window.removeEventListener("keyup", up); };
   }, []);
+
+  // Escape to cancel pending connect
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === "Escape" && pendingConnect) {
+        setPendingConnect(null);
+        setCursorWorld(null);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [pendingConnect]);
 
   // Fit to view
   const fitView = useCallback((nodeList) => {
@@ -137,6 +151,8 @@ export default function DesignCanvas({
     const rect = wrapRef.current?.getBoundingClientRect();
     if (!rect) return;
 
+    setLastScreenCursor({ x: e.clientX, y: e.clientY });
+
     if (panRef.current) {
       const dx = e.clientX - panRef.current.startX;
       const dy = e.clientY - panRef.current.startY;
@@ -154,11 +170,11 @@ export default function DesignCanvas({
       });
       return;
     }
-    if (connectRef.current) {
+    if (pendingConnect) {
       const world = screenToWorld(e.clientX - rect.left, e.clientY - rect.top, viewport);
-      setGhostEdge({ ...connectRef.current, ex: world.x, ey: world.y });
+      setCursorWorld(world);
     }
-  }, [viewport]);
+  }, [viewport, pendingConnect]);
 
   const onBgPointerUp = useCallback((e) => {
     const rect = wrapRef.current?.getBoundingClientRect();
@@ -180,93 +196,41 @@ export default function DesignCanvas({
     }
     marqueeRef.current = null;
     setMarquee(null);
-
-    if (connectRef.current) {
-      const cx = e.clientX - rect.left;
-      const cy = e.clientY - rect.top;
-      const world = screenToWorld(cx, cy, viewport);
-      setGhostEdge(null);
-      const pending = connectRef.current;
-      connectRef.current = null;
-
-      const target = document.elementFromPoint(e.clientX, e.clientY);
-      const inputHandle = target?.closest("[data-handle='input']");
-      if (inputHandle) {
-        // handled by node's onPointerUp
-      } else {
-        setQuickAdd({
-          screenX: cx, screenY: cy,
-          worldX: world.x, worldY: world.y,
-          pendingConnect: pending,
-        });
-      }
-    }
   }, [marquee, nodes, viewport, onSelect]);
 
-  // Connect start/end
-  const onStartConnect = (e, sourceId, sourceHandle, color) => {
-    e.preventDefault();
+  // Click-based connect handlers
+  const onOutputClick = useCallback((e, sourceId, sourceHandle, color) => {
     e.stopPropagation();
     const rect = wrapRef.current.getBoundingClientRect();
-    const startScreen = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-    const startWorld = screenToWorld(startScreen.x, startScreen.y, viewport);
-    const origin = { sx: e.clientX, sy: e.clientY };
-    let moved = false;
+    const w = screenToWorld(e.clientX - rect.left, e.clientY - rect.top, viewport);
+    if (pendingConnect && pendingConnect.sourceId === sourceId && pendingConnect.sourceHandle === sourceHandle) {
+      // Clicking the same armed handle cancels
+      setPendingConnect(null);
+      setCursorWorld(null);
+      return;
+    }
+    setPendingConnect({ sourceId, sourceHandle, color, sourceWorldX: w.x, sourceWorldY: w.y });
+  }, [viewport, pendingConnect]);
 
-    const move = (ev) => {
-      const dx = ev.clientX - origin.sx;
-      const dy = ev.clientY - origin.sy;
-      if (!moved && (Math.abs(dx) > 4 || Math.abs(dy) > 4)) {
-        moved = true;
-        setGhostEdge({ from: startWorld, to: startWorld, color });
-      }
-      if (!moved) return;
-      const cx = ev.clientX - rect.left;
-      const cy = ev.clientY - rect.top;
-      const w = screenToWorld(cx, cy, viewport);
-      setGhostEdge(g => g ? { ...g, to: w } : null);
-    };
-
-    const up = (ev) => {
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", up);
-      if (!moved) {
-        setGhostEdge(null);
-        return;
-      }
-      const elTarget = document.elementFromPoint(ev.clientX, ev.clientY);
-      const inputEl = elTarget && elTarget.closest("[data-handle-input]");
-      if (inputEl) {
-        const targetId = inputEl.getAttribute("data-node-id");
-        if (targetId && targetId !== sourceId) {
-          onConnect({ source: sourceId, sourceHandle, target: targetId });
-        }
-      } else {
-        const onNode = elTarget && elTarget.closest(".cc-canvas-node");
-        if (!onNode) {
-          const cx = ev.clientX - rect.left;
-          const cy = ev.clientY - rect.top;
-          const w = screenToWorld(cx, cy, viewport);
-          setQuickAdd({ screenX: cx, screenY: cy, worldX: w.x, worldY: w.y, source: sourceId, sourceHandle });
-        }
-      }
-      setGhostEdge(null);
-    };
-
-    window.addEventListener("pointermove", move);
-    window.addEventListener("pointerup", up);
-  };
+  const onInputClick = useCallback((e, targetId) => {
+    e.stopPropagation();
+    if (!pendingConnect) return;
+    if (pendingConnect.sourceId === targetId) {
+      // No self-connection
+      setPendingConnect(null);
+      setCursorWorld(null);
+      return;
+    }
+    onConnect({ source: pendingConnect.sourceId, sourceHandle: pendingConnect.sourceHandle, target: targetId });
+    setPendingConnect(null);
+    setCursorWorld(null);
+  }, [pendingConnect, onConnect]);
 
   const onQuickAddSelect = useCallback((typeKey) => {
     if (!quickAdd) return;
-    const { worldX, worldY, pendingConnect } = quickAdd;
+    const { worldX, worldY } = quickAdd;
     setQuickAdd(null);
-    onCanvasDrop(
-      typeKey,
-      worldX - NODE_W / 2,
-      worldY - 50,
-      pendingConnect ? { source: pendingConnect.sourceId, sourceHandle: pendingConnect.sourceHandle } : null,
-    );
+    onCanvasDrop(typeKey, worldX - NODE_W / 2, worldY - 50, null);
   }, [quickAdd, onCanvasDrop]);
 
   // HTML5 library drop
@@ -352,12 +316,29 @@ export default function DesignCanvas({
             scale={zoom}
             onSelect={(id, shift) => onSelect([id], shift)}
             onMove={onMoveNode}
-            onStartConnect={onStartConnect}
+            onOutputClick={onOutputClick}
+            onInputClick={onInputClick}
             onTitleChange={onTitleCommit}
             onDeleteNode={onNodeDelete}
             onDuplicateNode={onNodeDuplicate}
+            pendingConnect={pendingConnect}
           />
         ))}
+
+        {/* Ghost edge while connecting */}
+        {pendingConnect && cursorWorld && (
+          <svg className="absolute pointer-events-none" style={{ left: 0, top: 0, overflow: "visible", width: 1, height: 1 }}>
+            <path
+              d={`M ${pendingConnect.sourceWorldX},${pendingConnect.sourceWorldY} C ${pendingConnect.sourceWorldX + 60},${pendingConnect.sourceWorldY} ${cursorWorld.x - 60},${cursorWorld.y} ${cursorWorld.x},${cursorWorld.y}`}
+              stroke={pendingConnect.color}
+              strokeWidth={2}
+              fill="none"
+              strokeDasharray="6 5"
+              opacity={0.85}
+              pointerEvents="none"
+            />
+          </svg>
+        )}
       </div>
 
       {/* Marquee */}
@@ -382,6 +363,21 @@ export default function DesignCanvas({
           onSelect={onQuickAddSelect}
           onClose={() => setQuickAdd(null)}
         />
+      )}
+
+      {/* Floating hint while connecting */}
+      {pendingConnect && (
+        <div className="fixed pointer-events-none rounded-md px-2 py-1 text-xs z-[60] shadow-lg"
+             style={{
+               left: lastScreenCursor.x + 16,
+               top: lastScreenCursor.y + 16,
+               background: isLight ? "rgba(255,255,255,0.95)" : "rgba(24,24,27,0.95)",
+               color: isLight ? "#0f172a" : "#fafafa",
+               border: `1px solid ${isLight ? "rgba(15,23,42,0.12)" : "rgba(255,255,255,0.12)"}`,
+               backdropFilter: "blur(8px)",
+             }}>
+          Click an input handle or press Esc to cancel
+        </div>
       )}
 
       {/* Minimap */}
