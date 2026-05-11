@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from "react";
+import React, { useState, useCallback } from "react";
 import { X, RotateCcw, Monitor, Smartphone } from "lucide-react";
 import { motion } from "framer-motion";
 
