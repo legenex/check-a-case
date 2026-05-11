@@ -102,18 +102,21 @@ export default function DesignEdges({
 
         return (
           <g key={e.id}>
-            {/* Wide transparent hit area */}
-            <path d={path} stroke="transparent" strokeWidth={18} fill="none"
-              className="pointer-events-auto cursor-pointer"
+            {/* Invisible wide hit zone — 24px stroke for forgiving hover */}
+            <path d={path} stroke="transparent" strokeWidth={24} fill="none"
+              style={{ pointerEvents: "stroke", cursor: "pointer" }}
               onMouseEnter={() => setHoverEdgeId(e.id)}
               onMouseLeave={() => setHoverEdgeId(null)}
-              onClick={(ev) => { ev.stopPropagation(); onSelectEdge(e.id); }} />
-            {/* Visible stroke */}
-            <path d={path} stroke={hex}
+              onClick={(ev) => { ev.stopPropagation(); onSelectEdge(e.id); }}
+              onContextMenu={(ev) => { ev.preventDefault(); ev.stopPropagation(); onDeleteEdge(e.id); }} />
+            {/* Visible edge */}
+            <path d={path}
+              stroke={hex}
               strokeOpacity={selected || hovered ? 1 : isLight ? 0.45 : 0.55}
               strokeWidth={selected || hovered ? 2.5 : 1.75}
               fill="none"
               className={hovered ? "cc-edge-hover" : ""}
+              style={{ pointerEvents: "none" }}
               markerEnd={`url(#arr-${accent})`} />
             {/* Edge label */}
             {e.label && (
@@ -123,18 +126,20 @@ export default function DesignEdges({
                 {e.label}
               </text>
             )}
-            {/* Delete button */}
-            {(selected || hovered) && (
-              <g transform={`translate(${midX - 10}, ${midY - 10})`} className="pointer-events-auto" onClick={(ev) => { ev.stopPropagation(); onDeleteEdge(e.id); }}>
-                <circle cx={10} cy={10} r={9}
-                  fill={isLight ? "#fff" : "#1c1c22"}
-                  stroke="#f43f5e" strokeWidth={1.5}
-                  style={{ cursor: "pointer", transition: "all 150ms" }} />
-                <text x={10} y={14} textAnchor="middle"
-                  fill="#f43f5e" fontSize={13} fontFamily="monospace"
-                  style={{ cursor: "pointer", pointerEvents: "none" }}>
-                  ×
-                </text>
+            {/* Hover delete button — big, obvious red X */}
+            {(hovered || selected) && (
+              <g
+                transform={`translate(${midX}, ${midY})`}
+                style={{ cursor: "pointer", pointerEvents: "auto" }}
+                onMouseEnter={() => setHoverEdgeId(e.id)}
+                onMouseLeave={() => setHoverEdgeId(null)}
+                onClick={(ev) => { ev.stopPropagation(); onDeleteEdge(e.id); }}>
+                <circle r={11} fill="#f43f5e"
+                  stroke={isLight ? "#fff" : "#1c1c22"} strokeWidth={2}
+                  style={{ filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.35))" }} />
+                <path d="M -4 -4 L 4 4 M 4 -4 L -4 4"
+                  stroke="#fff" strokeWidth={2.25} strokeLinecap="round"
+                  style={{ pointerEvents: "none" }} />
               </g>
             )}
           </g>

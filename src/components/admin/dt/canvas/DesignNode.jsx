@@ -60,29 +60,46 @@ function NodeTitle({ title, onChange, className }) {
   );
 }
 
-function OutputRow({ label, accentHex, isLight, showLabel, onOutputClick, onOutputPointerDown, nodeId, handleId, pendingConnect, connectionMode }) {
+function OutputRow({ accentHex, label, isLight, showLabel, onOutputClick, nodeId, handleId, pendingConnect }) {
   const isArmed = pendingConnect?.sourceId === nodeId && pendingConnect?.sourceHandle === handleId;
   return (
-    <div className="cc-no-drag relative flex items-center justify-end gap-2 px-3.5 py-1.5 group">
+    <div
+      className="cc-no-drag relative flex items-center justify-end gap-2 px-3.5 group"
+      style={{ height: 28, minHeight: 28, maxHeight: 28 }}
+    >
       {showLabel && (
-        <span className={`text-[11px] font-medium truncate ${isLight ? "text-slate-600 group-hover:text-slate-900" : "text-zinc-400 group-hover:text-zinc-100"}`}
-              style={{ maxWidth: 180 }} title={label}>{label}</span>
+        <span
+          className={`text-[11px] font-medium ${isLight ? "text-slate-600 group-hover:text-slate-900" : "text-zinc-400 group-hover:text-zinc-100"}`}
+          style={{
+            maxWidth: 180,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+            display: "inline-block",
+            lineHeight: "28px",
+          }}
+          title={label}
+        >
+          {label}
+        </span>
       )}
-      <span className="cc-handle w-5 h-5 rounded-full border-2 absolute right-0 translate-x-1/2 transition-all"
-            style={{
-              background: accentHex,
-              borderColor: isLight ? "#fff" : "#1c1c22",
-              pointerEvents: "auto",
-              zIndex: 20,
-              cursor: "crosshair",
-              boxShadow: isArmed ? `0 0 0 4px ${accentHex}55, 0 0 12px 2px ${accentHex}88` : undefined,
-              animation: isArmed ? "ccPulse 1.2s ease-in-out infinite" : undefined,
-            }}
-            data-handle-output="true"
-            data-node-id={nodeId}
-            data-handle-id={handleId}
-            onClick={connectionMode === "click" ? (e) => { e.stopPropagation(); onOutputClick?.(e, nodeId, handleId, accentHex); } : undefined}
-            onPointerDown={connectionMode === "drag" ? (e) => { e.stopPropagation(); onOutputPointerDown(e, nodeId, handleId, accentHex); } : undefined}
+      <span
+        className="cc-handle rounded-full border-2 absolute right-0 translate-x-1/2"
+        style={{
+          width: 12,
+          height: 12,
+          background: accentHex,
+          borderColor: isLight ? "#fff" : "#1c1c22",
+          pointerEvents: "auto",
+          zIndex: 20,
+          cursor: "crosshair",
+          boxShadow: isArmed ? `0 0 0 4px ${accentHex}55, 0 0 12px 2px ${accentHex}88` : undefined,
+          animation: isArmed ? "ccArmedPulse 0.9s ease-in-out infinite" : undefined,
+        }}
+        data-handle-output="true"
+        data-node-id={nodeId}
+        data-handle-id={handleId}
+        onClick={(e) => { e.stopPropagation(); onOutputClick(e, nodeId, handleId, accentHex); }}
       />
     </div>
   );
@@ -457,16 +474,14 @@ export default function DesignNode({
             {outs.map((o) => (
               <OutputRow
                 key={o.id}
-                label={o.label}
                 accentHex={accentHex}
+                label={o.label}
                 isLight={isLight}
                 showLabel
                 nodeId={node.id}
                 handleId={o.id}
                 onOutputClick={onOutputClick}
-                onOutputPointerDown={onOutputPointerDown}
                 pendingConnect={pendingConnect}
-                connectionMode={connectionMode}
               />
             ))}
           </div>
@@ -501,16 +516,14 @@ export default function DesignNode({
         {outs.length === 1 && outs[0].label !== "" && (
           <div style={{ borderTop: `1px solid ${isLight ? "rgba(15,23,42,0.06)" : "rgba(255,255,255,0.05)"}` }}>
             <OutputRow
-              label={outs[0].label}
               accentHex={accentHex}
+              label={outs[0].label}
               isLight={isLight}
               showLabel
               nodeId={node.id}
               handleId={outs[0].id}
               onOutputClick={onOutputClick}
-              onOutputPointerDown={onOutputPointerDown}
               pendingConnect={pendingConnect}
-              connectionMode={connectionMode}
             />
           </div>
         )}
