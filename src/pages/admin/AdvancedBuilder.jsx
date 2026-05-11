@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from "react";
+import React, { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
@@ -15,6 +15,7 @@ import TestModePanel from "@/components/admin/dt/canvas/TestModePanel";
 import ValidationPopover from "@/components/admin/dt/canvas/ValidationPopover";
 import TemplatePickerModal from "@/components/admin/dt/canvas/TemplatePickerModal";
 import { persistType } from "@/components/admin/dt/canvas/nodeTypes";
+import { detectEntryNode, validateTree } from "@/components/admin/dt/canvas/validateTree";
 import NodeInspectorPanel from "@/components/admin/dt/inspector/NodeInspectorPanel";
 
 const THEME_KEY = "cac_dt_canvas_theme";
@@ -67,7 +68,10 @@ function bfsLayout(nodes, edges) {
   const adj = {};
   for (const n of nodes) adj[n.id] = [];
   for (const e of edges) { if (adj[e.source]) adj[e.source].push(e.target); }
-  const startNode = nodes.find((n) => n.node_type === "start_page") || nodes[0];
+  // Use entry-node detection instead of hardcoded start_page
+  const hasInbound = new Set(edges.map((e) => e.target));
+  const candidates = nodes.filter((n) => !hasInbound.has(n.id));
+  const startNode = (candidates.length === 1 ? candidates[0] : null) || nodes.find((n) => n.node_type === "start_page") || nodes[0];
   const visited = new Set();
   const depthMap = {};
   const queue = [{ id: startNode.id, depth: 0 }];
@@ -711,6 +715,20 @@ export default function AdvancedBuilder() {
     return () => { document.body.style.overflow = ""; };
   }, []);
 
+  // Render edges + entry detection — MUST be before early returns (hooks rule)
+  const renderEdges = useMemo(() => {
+    const nodeIds = new Set(nodes.map((n) => n.id));
+    const seen = new Map();
+    for (const e of edges) {
+      if (!nodeIds.has(e.source) || !nodeIds.has(e.target)) continue;
+      const key = `${e.source}|${e.sourceHandle || "next"}|${e.target}`;
+      seen.set(key, e);
+    }
+    return Array.from(seen.values());
+  }, [nodes, edges]);
+
+  const { entryId } = useMemo(() => detectEntryNode(nodes, renderEdges), [nodes, renderEdges]);
+
   if (loadingQuiz || loadingQ || loadingE) {
     return <div className="flex items-center justify-center h-screen bg-zinc-950"><Loader2 className="w-7 h-7 animate-spin text-slate-500" /></div>;
   }
@@ -720,8 +738,6 @@ export default function AdvancedBuilder() {
   const borderColor = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)";
   const textPrimary = isDark ? "#e2e8f0" : "#1e293b";
   const textSecondary = isDark ? "#94a3b8" : "#64748b";
-
-  // Issue count computed lazily inside ValidationPopover
 
   const savePill = () => {
     if (saveStatus === "unsaved") return (
@@ -752,20 +768,6 @@ export default function AdvancedBuilder() {
 
   const testTraversedNodes = [];
   const testNodeId = null;
-
-  // Render edges: filter orphans AND de-duplicate by source+sourceHandle+target
-  const renderEdges = (() => {
-    const nodeIds = new Set(nodes.map((n) => n.id));
-    const seen = new Map();
-    for (const e of edges) {
-      // Drop orphans (edges referencing missing nodes)
-      if (!nodeIds.has(e.source) || !nodeIds.has(e.target)) continue;
-      // Drop duplicates: last write wins by key
-      const key = `${e.source}|${e.sourceHandle || "next"}|${e.target}`;
-      seen.set(key, e);
-    }
-    return Array.from(seen.values());
-  })();
 
   // Template handler
   const onUseTemplate = async (tpl) => {
@@ -943,7 +945,17 @@ export default function AdvancedBuilder() {
 
           {/* Published toggle */}
           <button
-            onClick={() => updateQuizMut.mutate({ status: quiz.status === "published" ? "draft" : "published" })}
+            onClick={() => {
+              if (quiz.status !== "published") {
+                const { issues } = validateTree(nodes, renderEdges);
+                const errors = issues.filter((i) => i.severity === "error");
+                if (errors.length > 0) {
+                  showToast(`Fix ${errors.length} error${errors.length === 1 ? "" : "s"} before publishing.`);
+                  return;
+                }
+              }
+              updateQuizMut.mutate({ status: quiz.status === "published" ? "draft" : "published" });
+            }}
             className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors"
             style={{
               background: quiz.status === "published" ? "rgba(16,185,129,0.12)" : "rgba(245,158,11,0.10)",
@@ -1001,6 +1013,7 @@ export default function AdvancedBuilder() {
             testNodeId={testNodeId}
             testTraversedNodes={testTraversedNodes}
             selectedEdgeId={selectedEdgeId}
+            entryId={entryId}
             onMoveNode={onMoveNode}
             onSelect={(ids, additive) => {
               if (!Array.isArray(ids)) ids = [ids];
@@ -1089,6 +1102,9 @@ export default function AdvancedBuilder() {
               <span className="font-semibold text-sm" style={{ color: textPrimary }}>Keyboard Shortcuts</span>
               <button onClick={() => setShowHelp(false)} style={{ color: textSecondary }}>Close</button>
             </div>
+            <p className="text-[10px] mb-3 leading-relaxed" style={{ color: textSecondary }}>
+              Every tree has one entry node — the node with no inbound connections. Any node type can be the entry. All other nodes must be connected to the flow.
+            </p>
             {[
               ["Pan", "Space + drag, or two-finger drag"],
               ["Zoom", "Cmd/Ctrl + scroll, or pinch"],

@@ -1,9 +1,11 @@
 import React, { useState, useCallback } from "react";
 import { X, ChevronRight } from "lucide-react";
 import { designType, getNodeOutputs } from "./nodeTypes";
+import { detectEntryNode } from "./validateTree";
 
 export default function TestModePanel({ nodes, edges, startNodeId, isDark, onClose, onJumpToNode }) {
-  const [currentNodeId, setCurrentNodeId] = useState(startNodeId || nodes.find((n) => designType(n) === "start")?.id || nodes[0]?.id);
+  const autoEntryId = detectEntryNode(nodes, edges).entryId;
+  const [currentNodeId, setCurrentNodeId] = useState(startNodeId || autoEntryId || nodes[0]?.id);
   const [variables, setVariables] = useState({});
   const [path, setPath] = useState([currentNodeId].filter(Boolean));
 
@@ -27,7 +29,7 @@ export default function TestModePanel({ nodes, edges, startNodeId, isDark, onClo
   }, [currentNodeId, edges, nodeMap]);
 
   const handleReset = () => {
-    const start = nodes.find((n) => designType(n) === "start")?.id || nodes[0]?.id;
+    const start = detectEntryNode(nodes, edges).entryId || nodes[0]?.id;
     setCurrentNodeId(start);
     setVariables({});
     setPath([start].filter(Boolean));

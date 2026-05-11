@@ -2,19 +2,11 @@ export const BUILT_IN_TEMPLATES = [
   {
     id: "tpl_blank",
     name: "Blank Tree",
-    description: "Start from scratch with just a Trigger node.",
+    description: "Start from scratch with any node type.",
     icon: "Zap",
     accent: "violet",
     campaign_type: "custom",
-    nodes: [
-      {
-        node_id: "n_start",
-        type: "start",
-        position_x: 200,
-        position_y: 200,
-        data: { title: "When session starts", variables: [] },
-      },
-    ],
+    nodes: [],
     edges: [],
   },
   {

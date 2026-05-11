@@ -12,7 +12,7 @@ export const RESULT_KINDS = {
 // "type" here is the short design key (start, single_choice, etc.)
 export const NODE_TYPES = {
   start: {
-    label: "Trigger", category: "System", accent: "violet", icon: "Zap",
+    label: "Start", category: "System", accent: "violet", icon: "Zap",
     description: "Entry point. Initialize variables.",
     node_type: "start_page", config_kind: null,
     outputs: () => [{ id: "next", label: "" }],

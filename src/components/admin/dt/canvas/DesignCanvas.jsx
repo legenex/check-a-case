@@ -15,6 +15,7 @@ function worldToScreen(wx, wy, vp) { return { x: wx * vp.zoom + vp.x, y: wy * vp
 export default function DesignCanvas({
   nodes, edges, selection, isLight,
   testNodeId, testTraversedNodes, selectedEdgeId,
+  entryId,
   onMoveNode, onSelect, onClearSelection, onSelectAll,
   onDeleteSelected, onDuplicateSelected,
   onEdgeClick, onEdgeDelete,
@@ -432,6 +433,7 @@ export default function DesignCanvas({
             selected={selection.includes(node.id)}
             testActive={testNodeId === node.id}
             testTraversed={testTraversedSet.has(node.id)}
+            isEntry={node.id === entryId}
             validation={validation}
             scale={zoom}
             onSelect={(id, shift) => onSelect([id], shift)}
@@ -464,6 +466,16 @@ export default function DesignCanvas({
           </svg>
         )}
       </div>
+
+      {/* Empty state */}
+      {nodes.length === 0 && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className={`text-center ${isLight ? "text-slate-500" : "text-zinc-500"}`}>
+            <div className="text-lg font-medium mb-2">Empty tree</div>
+            <div className="text-sm opacity-75">Drag a node from the library to start, or pick a template.</div>
+          </div>
+        </div>
+      )}
 
       {/* Marquee */}
       {marquee && (

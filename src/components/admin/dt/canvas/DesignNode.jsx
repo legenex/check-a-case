@@ -242,6 +242,7 @@ function NodeBody({ node, subColor, accentHex, isLight, dt }) {
 
 export default function DesignNode({
   node, isLight, selected, testActive, testTraversed,
+  isEntry,
   validation, scale = 1,
   onSelect, onMove, onOutputClick, onOutputPointerDown, onInputClick, onTitleChange,
   onDeleteNode, onDuplicateNode,
@@ -342,6 +343,20 @@ export default function DesignNode({
             zIndex: 2,
           }}
         />
+      )}
+
+      {/* ENTRY badge */}
+      {isEntry && (
+        <div
+          className="absolute -top-2 -left-2 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider z-10 pointer-events-none"
+          style={{
+            background: accentHex,
+            color: "#fff",
+            boxShadow: "0 2px 6px rgba(0,0,0,0.25)",
+          }}
+        >
+          Entry
+        </div>
       )}
 
       {/* Card */}

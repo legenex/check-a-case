@@ -79,7 +79,6 @@ export default function DesignLibrary({ isLight, collapsed, onToggle, onOpenTemp
   const byCategory = {};
   for (const cat of CATEGORIES) byCategory[cat] = [];
   for (const [key, def] of Object.entries(NODE_TYPES)) {
-    if (key === "start") continue;
     if (search) {
       const q = search.toLowerCase();
       if (!def.label.toLowerCase().includes(q) && !def.category.toLowerCase().includes(q)) continue;
