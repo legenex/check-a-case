@@ -4,6 +4,7 @@ import SingleSelectNode from "./nodes/SingleSelectNode";
 import MultiSelectNode from "./nodes/MultiSelectNode";
 import TextFieldNode from "./nodes/TextFieldNode";
 import FormNode from "./nodes/FormNode";
+import React, { useEffect } from "react";
 import PhoneVerifyNode from "./nodes/PhoneVerifyNode";
 import ResultsNode from "./nodes/ResultsNode";
 import { ArrowRight, Info } from "lucide-react";
@@ -15,45 +16,61 @@ export default function RuntimeNode({
 }) {
   if (!node) return null;
   const type = node.node_type;
+  const nodeId = node.node_id || node.id;
+  const customCss = node.config?.custom_css;
+
+  // Inject per-node custom CSS scoped to [data-node-id]
+  React.useEffect(() => {
+    if (!customCss || !nodeId) return;
+    const styleId = `node-css-${nodeId}`;
+    let el = document.getElementById(styleId);
+    if (!el) { el = document.createElement("style"); el.id = styleId; document.head.appendChild(el); }
+    el.textContent = customCss.replace(/([^{]+)\{/g, (m, sel) => `[data-node-id="${nodeId}"] ${sel.trim()} {`);
+    return () => { const s = document.getElementById(styleId); if (s) s.remove(); };
+  }, [customCss, nodeId]);
+
+  const wrap = (content) => (
+    <div data-node-id={nodeId}>{content}</div>
+  );
 
   if (type === 'start_page') {
-    return <StartPageNode node={node} quiz={quiz} brand={brand} onNext={onNext} />;
+    return wrap(<StartPageNode node={node} quiz={quiz} brand={brand} onNext={onNext} />);
   }
 
   if (type === 'single_select') {
-    return <SingleSelectNode node={node} fieldValues={fieldValues} onAnswer={onAnswer} />;
+    return wrap(<SingleSelectNode node={node} fieldValues={fieldValues} onAnswer={onAnswer} />);
   }
 
   if (type === 'multiple_choice' || type === 'checkbox_multi_select') {
-    return <MultiSelectNode node={node} fieldValues={fieldValues} onAnswer={onAnswer} />;
+    return wrap(<MultiSelectNode node={node} fieldValues={fieldValues} onAnswer={onAnswer} />);
   }
 
   if (type === 'dropdown') {
-    return <DropdownNode node={node} fieldValues={fieldValues} onAnswer={onAnswer} />;
+    return wrap(<DropdownNode node={node} fieldValues={fieldValues} onAnswer={onAnswer} />);
   }
 
   if (type === 'text_field') {
-    return <TextFieldNode node={node} fieldValues={fieldValues} onAnswer={onAnswer} />;
+    return wrap(<TextFieldNode node={node} fieldValues={fieldValues} onAnswer={onAnswer} />);
   }
 
   if (type === 'text_block' || type === 'information') {
-    return <TextBlockNode node={node} type={type} onNext={onNext} />;
+    return wrap(<TextBlockNode node={node} type={type} onNext={onNext} />);
   }
 
   if (type === 'slider') {
-    return <SliderNode node={node} fieldValues={fieldValues} onAnswer={onAnswer} />;
+    return wrap(<SliderNode node={node} fieldValues={fieldValues} onAnswer={onAnswer} />);
   }
 
   if (type === 'date_picker' || type === 'datetime_picker') {
-    return <DatePickerNode node={node} type={type} fieldValues={fieldValues} onAnswer={onAnswer} />;
+    return wrap(<DatePickerNode node={node} type={type} fieldValues={fieldValues} onAnswer={onAnswer} />);
   }
 
   if (type === 'address') {
-    return <AddressNode node={node} fieldValues={fieldValues} onAnswer={onAnswer} />;
+    return wrap(<AddressNode node={node} fieldValues={fieldValues} onAnswer={onAnswer} />);
   }
 
   if (type === 'form') {
-    return (
+    return wrap(
       <FormNode
         node={node}
         contactForm={contactForm}
@@ -61,13 +78,13 @@ export default function RuntimeNode({
         runId={runId}
         sessionId={sessionId}
         onSuccess={(data) => onNext(data?.next_node_id)}
-        onError={(msg) => { /* handled in parent */ }}
+        onError={() => {}}
       />
     );
   }
 
   if (type === 'phone_verification') {
-    return (
+    return wrap(
       <PhoneVerifyNode
         node={node}
         fieldValues={fieldValues}
@@ -79,11 +96,11 @@ export default function RuntimeNode({
   }
 
   if (type === 'results_page') {
-    return <ResultsNode node={node} fieldValues={fieldValues} />;
+    return wrap(<ResultsNode node={node} fieldValues={fieldValues} />);
   }
 
-  // Fallback for unimplemented node types
-  return (
+  // Fallback
+  return wrap(
     <div className="max-w-lg mx-auto px-4 py-12 text-center text-slate-400">
       <p className="text-sm">[Node type: {type}]</p>
       <button onClick={() => onNext(null)}

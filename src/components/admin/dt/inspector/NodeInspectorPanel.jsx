@@ -8,6 +8,7 @@ import TagsTab from "../tabs/TagsTab";
 import ScriptsTab from "../tabs/ScriptsTab";
 import ValidationTab from "../tabs/ValidationTab";
 import TypeSpecificTab from "../tabs/TypeSpecificTab";
+import AdvancedNodeTab from "../tabs/AdvancedNodeTab";
 import BranchingTab from "./BranchingTab";
 import WebhookTab from "./WebhookTab";
 import NotificationTab from "./NotificationTab";
@@ -27,7 +28,8 @@ function buildTabs(node) {
   if (node.node_type === "webhook_api") tabs.push({ id: "webhook", label: "Webhook" });
   if (node.node_type.startsWith("notification_")) tabs.push({ id: "notification", label: "Notification" });
   if (node.node_type === "phone_verification") tabs.push({ id: "phone_verify", label: "Verify" });
-  if (TYPE_SPECIFIC.includes(node.node_type)) tabs.push({ id: "type_specific", label: "Advanced" });
+  if (TYPE_SPECIFIC.includes(node.node_type)) tabs.push({ id: "type_specific", label: "Config" });
+  tabs.push({ id: "advanced", label: "Advanced" });
   return tabs;
 }
 
@@ -89,6 +91,7 @@ export default function NodeInspectorPanel({ node, quiz, quizId, allNodes, allEd
         {currentTab === "notification" && <NotificationTab node={node} onUpdate={onUpdate} />}
         {currentTab === "phone_verify" && <PhoneVerifyTab node={node} allNodes={allNodes} onUpdate={onUpdate} />}
         {currentTab === "type_specific" && <TypeSpecificTab node={node} quizId={quizId} onUpdate={onUpdate} />}
+        {currentTab === "advanced" && <AdvancedNodeTab node={node} onUpdate={onUpdate} />}
       </div>
     </div>
   );

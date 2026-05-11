@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from "react";
+import React, { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
@@ -97,6 +97,9 @@ export default function AdvancedBuilder() {
   const [flowEdges, setFlowEdges] = useState([]);
   const [savedAt, setSavedAt] = useState(null);
   const [pendingSave, setPendingSave] = useState(false);
+  const [saveStatus, setSaveStatus] = useState("clean"); // clean | saving | saved | dirty | failed
+  const [saveError, setSaveError] = useState(null);
+  const saveRetryRef = useRef(0);
   const [showPreview, setShowPreview] = useState(false);
   const [previewNode, setPreviewNode] = useState(null);
   const [showStatusMenu, setShowStatusMenu] = useState(false);
@@ -164,8 +167,22 @@ export default function AdvancedBuilder() {
     },
   });
 
+  // Before-unload guard
+  useEffect(() => {
+    const handler = (e) => {
+      if (pendingSave || saveStatus === "dirty") {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [pendingSave, saveStatus]);
+
   // Save
   const doSave = useCallback(async (nodes, edges) => {
+    setSaveStatus("saving");
+    setSaveError(null);
     try {
       for (const fn of nodes) {
         const nodeId = fn.id;
@@ -201,15 +218,21 @@ export default function AdvancedBuilder() {
       qc.invalidateQueries(["edges", quizId]);
       setSavedAt(new Date());
       setPendingSave(false);
+      setSaveStatus("saved");
+      saveRetryRef.current = 0;
+      setTimeout(() => setSaveStatus("clean"), 3000);
     } catch (err) {
       console.error("Save failed", err);
+      setSaveStatus("failed");
+      setSaveError(err.message);
     }
   }, [dbQuestions, dbEdges, quizId, qc]);
 
   const scheduleAutoSave = useCallback((nodes, edges) => {
     setPendingSave(true);
+    setSaveStatus("dirty");
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    saveTimerRef.current = setTimeout(() => doSave(nodes, edges), 5000);
+    saveTimerRef.current = setTimeout(() => doSave(nodes, edges), 3000);
   }, [doSave]);
 
   const pushHistory = useCallback(() => {
@@ -515,19 +538,45 @@ export default function AdvancedBuilder() {
           )}
         </div>
 
-        <div className="flex items-center gap-1.5 flex-shrink-0">
-          {pendingSave ? (
-            <span className="flex items-center gap-1 text-xs text-slate-400"><Clock size={11} /> Unsaved</span>
-          ) : savedAt ? (
-            <span className="flex items-center gap-1 text-xs text-green-600"><CheckCircle2 size={11} /> {format(savedAt, "HH:mm:ss")}</span>
-          ) : null}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {/* Smart save indicator */}
+          {saveStatus === "clean" && savedAt && (
+            <span className={`flex items-center gap-1 text-xs ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>
+              <CheckCircle2 size={11} className="text-emerald-500" /> Saved
+            </span>
+          )}
+          {saveStatus === "dirty" && (
+            <span className="flex items-center gap-1 text-xs text-amber-500">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" /> Unsaved
+            </span>
+          )}
+          {saveStatus === "saving" && (
+            <span className={`flex items-center gap-1 text-xs ${isDarkMode ? "text-blue-400" : "text-blue-500"}`}>
+              <Clock size={11} className="animate-spin" /> Saving...
+            </span>
+          )}
+          {saveStatus === "saved" && (
+            <span className="flex items-center gap-1 text-xs text-emerald-600">
+              <CheckCircle2 size={11} /> Saved
+            </span>
+          )}
+          {saveStatus === "failed" && (
+            <button
+              onClick={() => doSave(flowNodes, flowEdges)}
+              className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700 transition-colors"
+              title={saveError || "Save failed"}
+            >
+              <Save size={11} /> Retry save
+            </button>
+          )}
+
           <button
             onClick={() => { if (saveTimerRef.current) clearTimeout(saveTimerRef.current); doSave(flowNodes, flowEdges); }}
             className={`flex items-center gap-1 px-2.5 py-1.5 rounded border text-xs transition-colors ${isDarkMode ? "border-slate-700 text-slate-300 hover:bg-slate-800" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}>
             <Save size={13} /> Save
           </button>
           <button onClick={handlePublish}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded bg-blue-600 text-white text-xs hover:bg-blue-700 transition-colors">
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded bg-blue-600 text-white text-xs hover:bg-blue-700 transition-colors font-semibold">
             <Zap size={13} /> Publish
           </button>
         </div>

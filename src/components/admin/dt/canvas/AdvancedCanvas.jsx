@@ -4,6 +4,7 @@ import {
   addEdge, reconnectEdge, MarkerType,
   ReactFlowProvider, useReactFlow, Panel,
 } from "@xyflow/react";
+import { AnimatePresence } from "framer-motion";
 import { Plus, Sun, Moon, X, LayoutGrid } from "lucide-react";
 import { DecisionFlowNode } from "./DecisionFlowNode";
 import { DecisionFlowEdge } from "./DecisionFlowEdge";
@@ -170,6 +171,22 @@ function CanvasInner({
 
   const dirtySet = new Set(dirtyNodeIds || []);
 
+  // Compute reachability + outgoing for warning indicators
+  const reachableIds = (() => {
+    const startId = nodes.find((n) => n.data?.node_type === "start_page")?.id;
+    if (!startId) return new Set();
+    const adj = {};
+    for (const n of nodes) adj[n.id] = [];
+    for (const e of edges) { if (adj[e.source]) adj[e.source].push(e.target); }
+    const visited = new Set();
+    const q = [startId];
+    while (q.length) { const id = q.shift(); if (visited.has(id)) continue; visited.add(id); for (const next of adj[id] || []) q.push(next); }
+    return visited;
+  })();
+
+  const outgoingByNode = {};
+  for (const e of edges) { if (!outgoingByNode[e.source]) outgoingByNode[e.source] = 0; outgoingByNode[e.source]++; }
+
   const nodesWithCallbacks = nodes.map((n) => ({
     ...n,
     data: {
@@ -182,6 +199,8 @@ function CanvasInner({
       _showAnswerHandles: showAnswers,
       _isDirty: dirtySet.has(n.id),
       _darkMode: isDarkMode,
+      _unreachable: n.data?.node_type !== "start_page" && !reachableIds.has(n.id),
+      _noOutgoing: n.data?.node_type !== "results_page" && !(outgoingByNode[n.id] > 0),
     },
   }));
 
@@ -296,19 +315,22 @@ function CanvasInner({
         </Panel>
       </ReactFlow>
 
-      {/* Real per-node-type editor modal */}
-      {editorNode && (
-        <NodeEditorModal
-          node={editorNode.data || editorNode}
-          allNodes={allNodeData}
-          allEdges={edges}
-          quiz={quiz}
-          quizId={quizId}
-          onSave={handleEditorSave}
-          onDelete={handleEditorDelete}
-          onClose={() => setEditorNode(null)}
-        />
-      )}
+      {/* Real per-node-type editor modal with AnimatePresence */}
+      <AnimatePresence>
+        {editorNode && (
+          <NodeEditorModal
+            key={editorNode.id}
+            node={editorNode.data || editorNode}
+            allNodes={allNodeData}
+            allEdges={edges}
+            quiz={quiz}
+            quizId={quizId}
+            onSave={handleEditorSave}
+            onDelete={handleEditorDelete}
+            onClose={() => setEditorNode(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

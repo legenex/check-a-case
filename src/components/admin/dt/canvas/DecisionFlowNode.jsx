@@ -74,6 +74,8 @@ export const DecisionFlowNode = memo(function DecisionFlowNode({ data, selected 
   const tagCount = (data.tags_to_add || []).length + (data.tags_to_remove || []).length;
   const scriptCount = (data.scripts || []).length;
   const isDirty = data._isDirty || false;
+  const isUnreachable = data._unreachable || false;
+  const hasNoOutgoing = data._noOutgoing || false;
   const connectedHandles = new Set(data._connectedHandles || []);
 
   const cardStyle = isDark
@@ -116,7 +118,9 @@ export const DecisionFlowNode = memo(function DecisionFlowNode({ data, selected 
         <span className={`text-[10px] font-semibold uppercase tracking-wide flex-1 truncate ${subTextColor}`}>
           {typeDef.label}
         </span>
-        {isDirty && <span className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0" title="Unsaved" />}
+        {isDirty && <span className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0" title="Unsaved changes" />}
+        {isUnreachable && <span className="w-2 h-2 rounded-full bg-orange-400 flex-shrink-0" title="Not reachable from start node" />}
+        {!isUnreachable && hasNoOutgoing && !isOutcome && <span className="w-2 h-2 rounded-full bg-orange-300 flex-shrink-0" title="No outgoing connection" />}
         {data.__error && <AlertCircle size={12} className="text-red-500 flex-shrink-0" />}
       </div>
 

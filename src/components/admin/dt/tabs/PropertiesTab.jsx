@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Tag } from "lucide-react";
 
 export default function PropertiesTab({ node, onUpdate }) {
   const [local, setLocal] = useState({
@@ -67,7 +68,7 @@ export default function PropertiesTab({ node, onUpdate }) {
         />
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-4">
         <label className="flex items-center gap-2 cursor-pointer">
           <input
             type="checkbox"
@@ -75,6 +76,16 @@ export default function PropertiesTab({ node, onUpdate }) {
             onChange={(e) => { handleChange("required", e.target.checked); onUpdate({ required: e.target.checked }); }}
           />
           <span className="text-sm font-medium">Required</span>
+        </label>
+        <label className="flex items-center gap-2 cursor-pointer" title="Adds tag 'visited:{label_snake}' to lead when this node is entered">
+          <input
+            type="checkbox"
+            checked={node.config?.auto_tag_visited || false}
+            onChange={(e) => onUpdate({ config: { ...(node.config || {}), auto_tag_visited: e.target.checked } })}
+          />
+          <span className="flex items-center gap-1 text-sm font-medium">
+            <Tag size={12} className="text-slate-500" /> Auto-tag visited
+          </span>
         </label>
       </div>
 
