@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Plug, CheckCircle } from "lucide-react";
 import IntegrationCard from "@/components/admin/integrations/IntegrationCard";
+import ExistingIntegrations from "@/components/admin/integrations/ExistingIntegrations";
 import CredentialField from "@/components/admin/integrations/CredentialField";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -216,12 +217,8 @@ export default function Integrations() {
           <TabsTrigger value="new">New Integrations (10)</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="existing" className="mt-4">
-          <div className="rounded-xl border border-border bg-muted/30 p-6 text-center text-muted-foreground">
-            <Plug className="w-8 h-8 mx-auto mb-2 opacity-40" />
-            <p className="font-medium">Existing integrations</p>
-            <p className="text-sm mt-1">Google Search Console, Google Analytics, Meta Ads, Google Tag Manager, Email SMTP, Slack, Custom Webhooks, TrustedForm, HLR Lookup are managed via the IntegrationConfig entity and are already configured.</p>
-          </div>
+        <TabsContent value="existing" className="mt-4 space-y-4">
+          <ExistingIntegrations />
         </TabsContent>
 
         <TabsContent value="new" className="mt-4 space-y-4">
