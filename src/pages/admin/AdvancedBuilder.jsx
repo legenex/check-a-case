@@ -508,24 +508,22 @@ export default function AdvancedBuilder() {
   }, [mutate]);
 
   const onConnect = useCallback((connection) => {
-    // Prevent multiple edges from same output handle
-    const existingEdge = edgesRef.current.find(
-      (e) => e.source === connection.source && (e.sourceHandle || "next") === (connection.sourceHandle || "next")
-    );
-    if (existingEdge) {
-      showToast("Output already connected. Delete the existing connection first.");
-      return;
-    }
-    
     const edgeId = crypto.randomUUID();
-    mutate((ns, es) => [ns, [...es, {
-      id: edgeId,
-      source: connection.source,
-      sourceHandle: connection.sourceHandle || "next",
-      target: connection.target,
-      targetHandle: connection.targetHandle || "in",
-      label: "", animated: false, style_color: "#94a3b8",
-    }]]);
+    mutate((ns, es) => {
+      // Remove existing edge from this output handle
+      const filtered = es.filter(
+        (e) => !(e.source === connection.source && (e.sourceHandle || "next") === (connection.sourceHandle || "next"))
+      );
+      // Add new connection
+      return [ns, [...filtered, {
+        id: edgeId,
+        source: connection.source,
+        sourceHandle: connection.sourceHandle || "next",
+        target: connection.target,
+        targetHandle: connection.targetHandle || "in",
+        label: "", animated: false, style_color: "#94a3b8",
+      }]];
+    });
   }, [mutate]);
 
   const onEdgeDelete = useCallback((edgeId) => {
