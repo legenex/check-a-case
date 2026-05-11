@@ -25,6 +25,56 @@ Deno.serve(async (req) => {
     // Merge field values into run
     const mergedFields = { ...(run.field_values || {}), ...fieldValues };
 
+    // ── TrustedForm: Retain existing cert or log missing ──────────────────────
+    let trustedFormCertUrl = mergedFields.trusted_form_cert_url || '';
+
+    if (trustedFormCertUrl) {
+      // Retain the cert via TrustedForm API
+      try {
+        const tfConfigs = await base44.asServiceRole.entities.IntegrationConfig.filter({ type: 'trusted_form' });
+        const tfConfig = tfConfigs.find((c) => c.enabled);
+        const tfApiKey = tfConfig?.credentials?.api_key;
+        const tfAccountId = tfConfig?.credentials?.account_id;
+
+        if (tfApiKey && tfAccountId) {
+          // Extract the cert token from the URL (last path segment)
+          const certToken = trustedFormCertUrl.split('/').pop();
+          const retainUrl = `https://api.trustedform.com/trustedform/certs/${certToken}`;
+
+          const retainRes = await fetch(retainUrl, {
+            method: 'POST',
+            headers: {
+              'Authorization': 'Basic ' + btoa(`${tfAccountId}:${tfApiKey}`),
+              'Content-Type': 'application/json',
+              'Api-Version': '4.0',
+            },
+            body: JSON.stringify({
+              retain: { reference: mergedFields.email || mergedFields.phone || runId },
+            }),
+          });
+
+          if (retainRes.ok) {
+            const retainData = await retainRes.json();
+            // Use the retained cert URL if returned
+            trustedFormCertUrl = retainData?.cert?.retain_for || trustedFormCertUrl;
+            console.log('TrustedForm cert retained:', trustedFormCertUrl);
+          } else {
+            const errText = await retainRes.text();
+            console.warn('TrustedForm retain failed:', retainRes.status, errText);
+          }
+        } else {
+          console.warn('TrustedForm enabled but API key/account ID not configured. Cert URL saved as-is.');
+        }
+      } catch (err) {
+        console.error('TrustedForm retain error:', err.message);
+        // Non-fatal: still save the cert URL we have
+      }
+    } else {
+      // No cert URL — TrustedForm certs are browser-generated so we cannot create one server-side.
+      // Log a warning so the issue is visible in function logs.
+      console.warn('TrustedForm cert URL missing for lead. Ensure the TrustedForm script is loaded on the form page.');
+    }
+
     // Create Lead record
     const lead = await base44.asServiceRole.entities.Lead.create({
       quiz_id: run.quiz_id,
@@ -37,7 +87,7 @@ Deno.serve(async (req) => {
       zip_code: mergedFields.zip_code || '',
       state: mergedFields.state || mergedFields.accident_state || '',
       field_values: mergedFields,
-      trusted_form_cert_url: mergedFields.trusted_form_cert_url || '',
+      trusted_form_cert_url: trustedFormCertUrl,
       status: 'new',
       qualification_tier: run.qualification_tier || null,
       utm_source: run.utm_source || mergedFields.utm_source || '',

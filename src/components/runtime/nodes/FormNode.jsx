@@ -63,10 +63,18 @@ export default function FormNode({ node, contactForm, fieldValues, runId, sessio
     setSubmitting(true);
     try {
       const merged = { ...fieldValues, ...values };
-      // Capture TrustedForm cert URL from the hidden input injected by their script
+      // Capture TrustedForm cert URL: prefer the live hidden input, fall back to any
+      // cert URL already captured in fieldValues (e.g. from a previous session step).
       if (trustedFormEnabled) {
         const certInput = document.getElementById(trustedFormFieldId);
-        if (certInput?.value) merged.trusted_form_cert_url = certInput.value;
+        const liveCert = certInput?.value;
+        if (liveCert) {
+          merged.trusted_form_cert_url = liveCert;
+        } else if (!merged.trusted_form_cert_url) {
+          // Also try the window object that TrustedForm sometimes populates
+          const windowCert = window.trustedForm?.certUrl || window.xxTrustedFormCertUrl;
+          if (windowCert) merged.trusted_form_cert_url = windowCert;
+        }
       }
       const res = await submitDecisionTreeForm({ runId, nodeId: node.id, fieldValues: merged, sessionId });
       if (res.data?.success) {
