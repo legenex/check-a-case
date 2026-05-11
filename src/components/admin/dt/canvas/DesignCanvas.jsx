@@ -428,6 +428,7 @@ export default function DesignCanvas({
               strokeDasharray="6 5"
               opacity={0.85}
               pointerEvents="none"
+              style={{ transition: "none" }}
             />
           </svg>
         )}

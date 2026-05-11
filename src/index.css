@@ -131,8 +131,10 @@
   50% { opacity: 0.6; }
 }
 
-.cc-handle { transition: transform 80ms ease; }
+.cc-handle { transition: transform 80ms ease, box-shadow 80ms ease; }
 .cc-handle:hover { transform: scale(1.45); }
+
+.cc-canvas-wrap svg path { transition: none !important; }
 
 .cc-lib-item { transition: background 120ms ease, transform 120ms ease; border: 1px solid transparent; }
 .cc-lib-item:hover { background: rgba(139,92,246,0.06); border-color: rgba(139,92,246,0.18); }

@@ -104,7 +104,7 @@ export default function DesignEdges({
           <g key={e.id}>
             {/* Invisible wide hit zone — 24px stroke for forgiving hover */}
             <path d={path} stroke="transparent" strokeWidth={24} fill="none"
-              style={{ pointerEvents: "stroke", cursor: "pointer" }}
+              style={{ pointerEvents: "stroke", cursor: "pointer", transition: "none" }}
               onMouseEnter={() => setHoverEdgeId(e.id)}
               onMouseLeave={() => setHoverEdgeId(null)}
               onClick={(ev) => { ev.stopPropagation(); onSelectEdge(e.id); }}
@@ -116,7 +116,7 @@ export default function DesignEdges({
               strokeWidth={selected || hovered ? 2.5 : 1.75}
               fill="none"
               className={hovered ? "cc-edge-hover" : ""}
-              style={{ pointerEvents: "none" }}
+              style={{ pointerEvents: "none", transition: "none" }}
               markerEnd={`url(#arr-${accent})`} />
             {/* Edge label */}
             {e.label && (

@@ -322,7 +322,12 @@ export default function DesignNode({
   return (
     <div
       className="cc-canvas-node absolute select-none"
-      style={{ width: NODE_W, left: node.position.x, top: node.position.y, willChange: "transform" }}
+      style={{ 
+        transform: `translate(${node.position.x}px, ${node.position.y}px)`,
+        width: NODE_W,
+        willChange: "transform",
+        transition: "box-shadow 160ms ease",
+      }}
       onPointerDown={onPointerDown}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -450,8 +455,9 @@ export default function DesignNode({
         {/* Input handle — left edge, centered */}
         {!isStart && !isNote && (
           <div
-            className="cc-handle absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 w-5 h-5 rounded-full border-2 z-10 transition-all"
+            className="cc-handle absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 w-5 h-5 rounded-full border-2 z-10"
             style={{
+              transition: "box-shadow 80ms ease, transform 80ms ease",
               background: isLight ? "#fff" : "#1c1c22",
               borderColor: accentHex,
               pointerEvents: "auto",
@@ -491,8 +497,9 @@ export default function DesignNode({
         {singleOutputNoLabel && (
           <div className="cc-no-drag absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 z-10">
             <div
-              className="cc-handle w-5 h-5 rounded-full border-2 transition-all"
+              className="cc-handle w-5 h-5 rounded-full border-2"
               style={{
+                transition: "box-shadow 80ms ease, transform 80ms ease",
                 background: accentHex,
                 borderColor: isLight ? "#fff" : "#1c1c22",
                 pointerEvents: "auto",
