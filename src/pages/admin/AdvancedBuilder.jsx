@@ -108,13 +108,19 @@ async function runDQMigration(quizId, quiz, allNodes, allEdges) {
   const newEdges = [...allEdges];
   const existingNodeIds = new Set(allNodes.map((n) => n.id));
 
+  // Check for existing Questions/Edges in DB to prevent duplicate creation
+  const dbQuestions = await base44.entities.Question.filter({ quiz_id: quizId }, null, 1000);
+  const dbEdges = await base44.entities.Edge.filter({ quiz_id: quizId }, null, 1000);
+  const dbNodeIds = new Set(dbQuestions.map((q) => q.node_id));
+  const dbEdgeIds = new Set(dbEdges.map((e) => e.edge_id));
+
   for (const node of allNodes) {
     const opts = node.answer_options || [];
     for (let i = 0; i < opts.length; i++) {
       const opt = opts[i];
       if (!opt.is_dq) continue;
       const resultId = `result_${node.id}_${opt.option_id || i}`;
-      if (existingNodeIds.has(resultId)) continue;
+      if (existingNodeIds.has(resultId) || dbNodeIds.has(resultId)) continue;
 
       const resultNode = {
         id: resultId,
@@ -133,6 +139,9 @@ async function runDQMigration(quizId, quiz, allNodes, allEdges) {
       };
 
       const edgeId = `migrated_${node.id}_${opt.option_id || i}`;
+      // Skip if edge already exists in DB
+      if (dbEdgeIds.has(edgeId)) continue;
+      
       const newEdge = {
         id: edgeId,
         source: node.id,
@@ -235,6 +244,7 @@ export default function AdvancedBuilder() {
   const historyRef = useRef({ past: [], future: [] });
   const saveTimerRef = useRef(null);
   const vpRef = useRef(null);
+  const migrationStartedRef = useRef(false);
   const nodesRef = useRef(nodes);
   const edgesRef = useRef(edges);
   nodesRef.current = nodes;
@@ -258,21 +268,57 @@ export default function AdvancedBuilder() {
     onSuccess: () => qc.invalidateQueries(["quiz", quizId]),
   });
 
-  // Initialize
+  // Initialize — load from Question rows only (single source of truth)
   useEffect(() => {
+    let cancelled = false;
     if (!loadingQ && !loadingE && quiz) {
-      const initNodes = questionsToNodes(dbQuestions);
-      const initEdges = edgesToInternal(dbEdges);
       setTitleVal(quiz.title || "");
+      
+      // One-time data-integrity sweep: remove duplicate Question rows
+      (async () => {
+        try {
+          const allQuestions = await base44.entities.Question.filter({ quiz_id: quizId }, null, 1000);
+          const byNodeId = new Map();
+          const duplicates = [];
+          for (const q of allQuestions) {
+            if (byNodeId.has(q.node_id)) {
+              duplicates.push(q);
+            } else {
+              byNodeId.set(q.node_id, q);
+            }
+          }
+          if (duplicates.length > 0) {
+            await Promise.all(duplicates.map((d) => base44.entities.Question.delete(d.id)));
+            console.log(`Cleaned up ${duplicates.length} duplicate Question rows.`);
+          }
+        } catch (err) {
+          console.error("Data integrity check failed:", err);
+        }
+      })();
+      
+      // De-duplicate: use last-write-wins by node_id
+      const nodeMap = new Map();
+      for (const q of dbQuestions) {
+        nodeMap.set(q.node_id, q);
+      }
+      const uniqueQuestions = Array.from(nodeMap.values());
+      
+      const initNodes = questionsToNodes(uniqueQuestions);
+      const initEdges = edgesToInternal(dbEdges);
 
-      runDQMigration(quizId, quiz, initNodes, initEdges).then(({ nodes: migNodes, edges: migEdges, count }) => {
-        if (count > 0) showToast(`Migrated ${count} old DQ option${count > 1 ? "s" : ""} to Result nodes.`);
-        setNodes(migNodes);
-        setEdges(migEdges);
-        qc.invalidateQueries(["questions", quizId]);
-        qc.invalidateQueries(["edges", quizId]);
-      });
+      if (!cancelled) {
+        runDQMigration(quizId, quiz, initNodes, initEdges).then(({ nodes: migNodes, edges: migEdges, count }) => {
+          if (!cancelled) {
+            if (count > 0) showToast(`Migrated ${count} old DQ option${count > 1 ? "s" : ""} to Result nodes.`);
+            setNodes(migNodes);
+            setEdges(migEdges);
+            qc.invalidateQueries(["questions", quizId]);
+            qc.invalidateQueries(["edges", quizId]);
+          }
+        });
+      }
     }
+    return () => { cancelled = true; };
   }, [loadingQ, loadingE, quiz?.id]);
 
   // Save ticker
