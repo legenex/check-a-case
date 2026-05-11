@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Loader2 } from "lucide-react";
 
@@ -7,13 +7,8 @@ const ALLOWED_ROLES = new Set(["admin", "Admin", "editor", "Editor", "analyst", 
 export default function AdminAuthGate({ children }) {
   const [status, setStatus] = useState("checking");
   const [user, setUser] = useState(null);
-  const ranRef = useRef(false);
 
   useEffect(() => {
-    // Guard against React StrictMode double-invoke
-    if (ranRef.current) return;
-    ranRef.current = true;
-
     let alive = true;
 
     (async () => {
@@ -26,9 +21,7 @@ export default function AdminAuthGate({ children }) {
           return;
         }
 
-        const role = me.role;
-
-        if (role && ALLOWED_ROLES.has(role)) {
+        if (me.role && ALLOWED_ROLES.has(me.role)) {
           setUser(me);
           setStatus("authorized");
         } else {
@@ -41,7 +34,7 @@ export default function AdminAuthGate({ children }) {
     })();
 
     return () => { alive = false; };
-  }, []); // empty deps — run ONCE
+  }, []);
 
   if (status === "checking") {
     return (
