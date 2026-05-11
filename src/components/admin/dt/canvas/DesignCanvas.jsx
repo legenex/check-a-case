@@ -21,7 +21,7 @@ export default function DesignCanvas({
   onNodeDelete, onNodeDuplicate,
   onConnect, onCanvasDrop, onTitleCommit,
   onViewportRef, libraryWidth,
-  validation,
+  validation, connectionMode,
 }) {
   const wrapRef = useRef(null);
   const [viewport, setViewport] = useState({ x: 80, y: 80, zoom: 0.82 });
@@ -58,6 +58,13 @@ export default function DesignCanvas({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [pendingConnect]);
+
+  // Clear pending connect when connectionMode changes
+  useEffect(() => {
+    setPendingConnect(null);
+    setCursorWorld(null);
+    setGhostEdge(null);
+  }, [connectionMode]);
 
   // Fit to view
   const fitView = useCallback((nodeList) => {
@@ -226,6 +233,45 @@ export default function DesignCanvas({
     setCursorWorld(null);
   }, [pendingConnect, onConnect]);
 
+  const onOutputPointerDown = useCallback((e, sourceId, sourceHandle, color) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const rect = wrapRef.current.getBoundingClientRect();
+    const startWorld = screenToWorld(e.clientX - rect.left, e.clientY - rect.top, viewport);
+    const origin = { sx: e.clientX, sy: e.clientY };
+    let moved = false;
+
+    const move = (ev) => {
+      const dx = ev.clientX - origin.sx;
+      const dy = ev.clientY - origin.sy;
+      if (!moved && (Math.abs(dx) > 4 || Math.abs(dy) > 4)) {
+        moved = true;
+        setGhostEdge({ from: startWorld, to: startWorld, color });
+      }
+      if (!moved) return;
+      const w = screenToWorld(ev.clientX - rect.left, ev.clientY - rect.top, viewport);
+      setGhostEdge(g => g ? { ...g, to: w } : null);
+    };
+
+    const up = (ev) => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      if (!moved) { setGhostEdge(null); return; }
+      const elTarget = document.elementFromPoint(ev.clientX, ev.clientY);
+      const inputEl = elTarget && elTarget.closest("[data-handle-input]");
+      if (inputEl) {
+        const targetId = inputEl.getAttribute("data-node-id");
+        if (targetId && targetId !== sourceId) {
+          onConnect({ source: sourceId, sourceHandle, target: targetId });
+        }
+      }
+      setGhostEdge(null);
+    };
+
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  }, [viewport, onConnect]);
+
   const onQuickAddSelect = useCallback((typeKey) => {
     if (!quickAdd) return;
     const { worldX, worldY } = quickAdd;
@@ -317,11 +363,13 @@ export default function DesignCanvas({
             onSelect={(id, shift) => onSelect([id], shift)}
             onMove={onMoveNode}
             onOutputClick={onOutputClick}
+            onOutputPointerDown={onOutputPointerDown}
             onInputClick={onInputClick}
             onTitleChange={onTitleCommit}
             onDeleteNode={onNodeDelete}
             onDuplicateNode={onNodeDuplicate}
             pendingConnect={pendingConnect}
+            connectionMode={connectionMode}
           />
         ))}
 
@@ -365,8 +413,8 @@ export default function DesignCanvas({
         />
       )}
 
-      {/* Floating hint while connecting */}
-      {pendingConnect && (
+      {/* Floating hint while connecting in click mode */}
+      {connectionMode === "click" && pendingConnect && (
         <div className="fixed pointer-events-none rounded-md px-2 py-1 text-xs z-[60] shadow-lg"
              style={{
                left: lastScreenCursor.x + 16,
