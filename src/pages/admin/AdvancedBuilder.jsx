@@ -7,8 +7,8 @@ import {
   AlertCircle, Play, Download, HelpCircle, Zap, CheckCircle2,
   MousePointerClick, Move
 } from "lucide-react";
-import { Loader2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
+import { Loader2 } from "lucide-react";
 
 import DesignCanvas from "@/components/admin/dt/canvas/DesignCanvas";
 import DesignLibrary from "@/components/admin/dt/canvas/DesignLibrary";
@@ -810,22 +810,28 @@ export default function AdvancedBuilder() {
           </button>
 
           {/* Connection mode toggle */}
-          <div className={`flex items-center rounded-lg border overflow-hidden mr-1`} style={{ borderColor: borderColor }}>
+          <div className="flex items-center rounded-lg border overflow-hidden" style={{ borderColor: borderColor }}>
             <button
               onClick={() => setConnectionMode("click")}
               title="Click handles to connect"
-              className={`px-2.5 h-8 text-xs font-medium flex items-center gap-1 transition-colors ${connectionMode === "click"
-                ? (isDark ? "bg-zinc-800 text-zinc-100" : "bg-slate-100 text-slate-900")
-                : (isDark ? "text-zinc-500 hover:text-zinc-300" : "text-slate-500 hover:text-slate-700")}`}>
+              className={`px-2.5 h-8 text-xs font-medium flex items-center gap-1 transition-colors ${
+                connectionMode === "click"
+                  ? isDark ? "bg-zinc-800 text-zinc-100" : "bg-slate-100 text-slate-900"
+                  : isDark ? "text-zinc-500 hover:text-zinc-300" : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
               <MousePointerClick size={13} strokeWidth={1.75} />
               Click
             </button>
             <button
               onClick={() => setConnectionMode("drag")}
               title="Drag from output to input to connect"
-              className={`px-2.5 h-8 text-xs font-medium flex items-center gap-1 transition-colors ${connectionMode === "drag"
-                ? (isDark ? "bg-zinc-800 text-zinc-100" : "bg-slate-100 text-slate-900")
-                : (isDark ? "text-zinc-500 hover:text-zinc-300" : "text-slate-500 hover:text-slate-700")}`}>
+              className={`px-2.5 h-8 text-xs font-medium flex items-center gap-1 transition-colors ${
+                connectionMode === "drag"
+                  ? isDark ? "bg-zinc-800 text-zinc-100" : "bg-slate-100 text-slate-900"
+                  : isDark ? "text-zinc-500 hover:text-zinc-300" : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
               <Move size={13} strokeWidth={1.75} />
               Drag
             </button>

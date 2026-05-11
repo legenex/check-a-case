@@ -24,14 +24,13 @@ export default function DesignCanvas({
   validation, connectionMode,
 }) {
   const wrapRef = useRef(null);
+  const ghostPathRef = useRef(null);
   const [viewport, setViewport] = useState({ x: 80, y: 80, zoom: 0.82 });
   const [spaceDown, setSpaceDown] = useState(false);
   const [hoverEdgeId, setHoverEdgeId] = useState(null);
-  const [ghostEdge, setGhostEdge] = useState(null);
   const [quickAdd, setQuickAdd] = useState(null);
   const [marquee, setMarquee] = useState(null);
   const [pendingConnect, setPendingConnect] = useState(null);
-  const [cursorWorld, setCursorWorld] = useState(null);
   const [lastScreenCursor, setLastScreenCursor] = useState({ x: 0, y: 0 });
 
   const dragRef = useRef(null);
@@ -52,7 +51,6 @@ export default function DesignCanvas({
     const onKey = (e) => {
       if (e.key === "Escape" && pendingConnect) {
         setPendingConnect(null);
-        setCursorWorld(null);
       }
     };
     window.addEventListener("keydown", onKey);
@@ -62,8 +60,6 @@ export default function DesignCanvas({
   // Clear pending connect when connectionMode changes
   useEffect(() => {
     setPendingConnect(null);
-    setCursorWorld(null);
-    setGhostEdge(null);
   }, [connectionMode]);
 
   // Fit to view
@@ -177,9 +173,14 @@ export default function DesignCanvas({
       });
       return;
     }
-    if (pendingConnect) {
-      const world = screenToWorld(e.clientX - rect.left, e.clientY - rect.top, viewport);
-      setCursorWorld(world);
+    if (pendingConnect && ghostPathRef.current) {
+      const wx = (e.clientX - rect.left - viewport.x) / viewport.zoom;
+      const wy = (e.clientY - rect.top - viewport.y) / viewport.zoom;
+      const sx = pendingConnect.sourceWorldX;
+      const sy = pendingConnect.sourceWorldY;
+      const dx = Math.max(Math.abs(wx - sx) * 0.5, 60);
+      const d = `M ${sx},${sy} C ${sx + dx},${sy} ${wx - dx},${wy} ${wx},${wy}`;
+      ghostPathRef.current.setAttribute('d', d);
     }
   }, [viewport, pendingConnect]);
 
@@ -246,17 +247,21 @@ export default function DesignCanvas({
       const dy = ev.clientY - origin.sy;
       if (!moved && (Math.abs(dx) > 4 || Math.abs(dy) > 4)) {
         moved = true;
-        setGhostEdge({ from: startWorld, to: startWorld, color });
+        setPendingConnect({ sourceId, sourceHandle, color, sourceWorldX: startWorld.x, sourceWorldY: startWorld.y });
       }
       if (!moved) return;
       const w = screenToWorld(ev.clientX - rect.left, ev.clientY - rect.top, viewport);
-      setGhostEdge(g => g ? { ...g, to: w } : null);
+      if (ghostPathRef.current) {
+        const dx = Math.max(Math.abs(w.x - startWorld.x) * 0.5, 60);
+        const d = `M ${startWorld.x},${startWorld.y} C ${startWorld.x + dx},${startWorld.y} ${w.x - dx},${w.y} ${w.x},${w.y}`;
+        ghostPathRef.current.setAttribute('d', d);
+      }
     };
 
     const up = (ev) => {
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", up);
-      if (!moved) { setGhostEdge(null); return; }
+      if (!moved) { setPendingConnect(null); return; }
       const elTarget = document.elementFromPoint(ev.clientX, ev.clientY);
       const inputEl = elTarget && elTarget.closest("[data-handle-input]");
       if (inputEl) {
@@ -265,7 +270,7 @@ export default function DesignCanvas({
           onConnect({ source: sourceId, sourceHandle, target: targetId });
         }
       }
-      setGhostEdge(null);
+      setPendingConnect(null);
     };
 
     window.addEventListener("pointermove", move);
@@ -346,7 +351,6 @@ export default function DesignCanvas({
           onDeleteEdge={onEdgeDelete}
           hoverEdgeId={hoverEdgeId}
           setHoverEdgeId={setHoverEdgeId}
-          ghostEdge={ghostEdge}
         />
 
         {/* Nodes */}
@@ -373,11 +377,12 @@ export default function DesignCanvas({
           />
         ))}
 
-        {/* Ghost edge while connecting */}
-        {pendingConnect && cursorWorld && (
+        {/* Ghost edge while connecting - ref-based for snappy responsiveness */}
+        {pendingConnect && (
           <svg className="absolute pointer-events-none" style={{ left: 0, top: 0, overflow: "visible", width: 1, height: 1 }}>
             <path
-              d={`M ${pendingConnect.sourceWorldX},${pendingConnect.sourceWorldY} C ${pendingConnect.sourceWorldX + 60},${pendingConnect.sourceWorldY} ${cursorWorld.x - 60},${cursorWorld.y} ${cursorWorld.x},${cursorWorld.y}`}
+              ref={ghostPathRef}
+              d=""
               stroke={pendingConnect.color}
               strokeWidth={2}
               fill="none"

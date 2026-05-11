@@ -78,7 +78,7 @@ export default function DesignEdges({
         ))}
         <style>{`
           @keyframes ccFlow { to { stroke-dashoffset: -24; } }
-          .cc-edge-hover { stroke-dasharray: 8 6; animation: ccFlow 0.9s linear infinite; }
+          .cc-edge-hover { stroke-dasharray: 8 6; animation: ccFlow 0.6s linear infinite; }
         `}</style>
       </defs>
 
