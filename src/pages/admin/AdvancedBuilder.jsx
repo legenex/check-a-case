@@ -13,6 +13,7 @@ import DesignCanvas from "@/components/admin/dt/canvas/DesignCanvas";
 import DesignLibrary from "@/components/admin/dt/canvas/DesignLibrary";
 import TestModePanel from "@/components/admin/dt/canvas/TestModePanel";
 import ValidationPopover from "@/components/admin/dt/canvas/ValidationPopover";
+import TemplatePickerModal from "@/components/admin/dt/canvas/TemplatePickerModal";
 import { persistType } from "@/components/admin/dt/canvas/nodeTypes";
 import NodeInspectorPanel from "@/components/admin/dt/inspector/NodeInspectorPanel";
 
@@ -233,6 +234,7 @@ export default function AdvancedBuilder() {
   const [titleVal, setTitleVal] = useState("");
   const [publishModal, setPublishModal] = useState(false);
   const [toast, setToast] = useState(null);
+  const [templateModalOpen, setTemplateModalOpen] = useState(false);
 
 
   const historyRef = useRef({ past: [], future: [] });
@@ -706,6 +708,73 @@ export default function AdvancedBuilder() {
   const testTraversedNodes = [];
   const testNodeId = null;
 
+  // Template handler
+  const onUseTemplate = async (tpl) => {
+    try {
+      // 1. Create a new Quiz
+      const newQuiz = await base44.entities.Quiz.create({
+        title: `${tpl.title || tpl.name} (Copy)`,
+        slug: `${(tpl.campaign_type || "custom")}-${Date.now()}`,
+        campaign_type: tpl.campaign_type || "custom",
+        status: "draft",
+        builder_mode: "advanced",
+        react_flow_data: { meta: { migration_completed: true } },
+      });
+
+      // 2. Map old node IDs to new ones
+      const idMap = {};
+      const nodeRecords = (tpl.nodes || []).map((n) => {
+        const newId = `n_${Math.random().toString(36).slice(2, 8)}`;
+        idMap[n.node_id] = newId;
+        const { node_type, config } = persistType(n.type || "note", n.data?.kind ? { result_kind: n.data.kind } : {});
+        return {
+          quiz_id: newQuiz.id,
+          node_id: newId,
+          node_type,
+          position_x: n.position_x ?? 0,
+          position_y: n.position_y ?? 0,
+          label: n.data?.title || n.label || "",
+          title_display: n.data?.title || "",
+          help_text: "",
+          placeholder: "",
+          required: true,
+          answer_options: [],
+          validation_rules: [],
+          config,
+          scripts: [],
+          tags_to_add: [],
+          tags_to_remove: [],
+          custom_field_assignments: [],
+          media_image_url: "",
+        };
+      });
+
+      const edgeRecords = (tpl.edges || []).map((e) => ({
+        quiz_id: newQuiz.id,
+        edge_id: `e_${Math.random().toString(36).slice(2, 8)}`,
+        source_node_id: idMap[e.source],
+        source_handle: e.sourceHandle || "next",
+        target_node_id: idMap[e.target],
+        target_handle: e.targetHandle || "in",
+        label: e.label || "",
+        animated: false,
+        style_color: e.style_color || "#94a3b8",
+      }));
+
+      // 3. Bulk-create
+      if (nodeRecords.length) await base44.entities.Question.bulkCreate(nodeRecords);
+      if (edgeRecords.length) await base44.entities.Edge.bulkCreate(edgeRecords);
+
+      // 4. Navigate to the new tree's editor
+      navigate(`/admin/decision-trees/${newQuiz.id}/edit`);
+      showToast(`Created ${newQuiz.title} from template.`);
+      setTemplateModalOpen(false);
+    } catch (err) {
+      console.error(err);
+      showToast("Failed to create from template. Try again.");
+    }
+  };
+
   return (
     <TooltipProvider>
       <style>{`
@@ -862,7 +931,7 @@ export default function AdvancedBuilder() {
         <div className="flex flex-1 overflow-hidden relative">
 
           {/* LIBRARY */}
-          <DesignLibrary isLight={!isDark} collapsed={libraryCollapsed} onToggle={() => setLibraryCollapsed((v) => !v)} />
+          <DesignLibrary isLight={!isDark} collapsed={libraryCollapsed} onToggle={() => setLibraryCollapsed((v) => !v)} onOpenTemplates={() => setTemplateModalOpen(true)} />
 
           {/* CANVAS */}
           <DesignCanvas
@@ -988,6 +1057,14 @@ export default function AdvancedBuilder() {
             {toast}
           </div>
         )}
+
+        {/* Template Picker Modal */}
+        <TemplatePickerModal
+          open={templateModalOpen}
+          onClose={() => setTemplateModalOpen(false)}
+          onUseTemplate={onUseTemplate}
+          isLight={!isDark}
+        />
       </div>
     </TooltipProvider>
   );

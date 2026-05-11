@@ -4,7 +4,7 @@ import {
   Zap, HelpCircle, CheckSquare, Type, Hash, Mail, Phone, GitBranch,
   Calculator, Variable, MessageSquare, Tag, Flag, StickyNote, FileCheck2,
   Trophy, Ban, AlertTriangle, ExternalLink, Webhook, Search,
-  ChevronLeft, ChevronRight,
+  ChevronLeft, ChevronRight, LayoutGrid,
 } from "lucide-react";
 import { NODE_TYPES, ACCENT_HEX, CATEGORIES, RESULT_KINDS } from "./nodeTypes";
 
@@ -68,7 +68,7 @@ function ResultKindChip({ kindKey, kindDef, collapsed }) {
   );
 }
 
-export default function DesignLibrary({ isLight, collapsed, onToggle }) {
+export default function DesignLibrary({ isLight, collapsed, onToggle, onOpenTemplates }) {
   const [search, setSearch] = useState("");
 
   const chromeBg = isLight ? "rgba(252,251,248,0.92)" : "rgba(20,20,24,0.92)";
@@ -125,7 +125,7 @@ export default function DesignLibrary({ isLight, collapsed, onToggle }) {
       )}
 
       {/* Categories */}
-      <div className="flex-1 overflow-y-auto px-1.5 pb-4 scroll-thin">
+      <div className="flex-1 overflow-y-auto px-1.5 pb-16 scroll-thin">
         {CATEGORIES.map((cat) => {
           const items = byCategory[cat];
           if (!items || items.length === 0) return null;
@@ -154,6 +154,40 @@ export default function DesignLibrary({ isLight, collapsed, onToggle }) {
             </div>
           );
         })}
+      </div>
+
+      {/* Footer: Templates button */}
+      <div
+        className="absolute bottom-0 left-0 right-0 px-1.5 py-3 flex-shrink-0 border-t"
+        style={{
+          borderColor: borderC,
+          background: chromeBg,
+          backdropFilter: "blur(12px)",
+        }}
+      >
+        <button
+          onClick={onOpenTemplates}
+          className="w-full flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg transition-colors text-xs font-medium"
+          style={{
+            color: textS,
+            background: isLight ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.04)",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = isLight ? "#0f172a" : "#e2e8f0";
+            e.currentTarget.style.background = isLight
+              ? "rgba(0,0,0,0.06)"
+              : "rgba(255,255,255,0.08)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = textS;
+            e.currentTarget.style.background = isLight
+              ? "rgba(0,0,0,0.03)"
+              : "rgba(255,255,255,0.04)";
+          }}
+        >
+          <LayoutGrid size={13} strokeWidth={1.75} />
+          {!collapsed && "Templates"}
+        </button>
       </div>
     </div>
   );
