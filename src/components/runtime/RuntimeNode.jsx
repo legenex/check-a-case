@@ -1,5 +1,4 @@
-import React, { useState } from "react";
-import React, { useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import StartPageNode from "./nodes/StartPageNode";
 import SingleSelectNode from "./nodes/SingleSelectNode";
 import MultiSelectNode from "./nodes/MultiSelectNode";

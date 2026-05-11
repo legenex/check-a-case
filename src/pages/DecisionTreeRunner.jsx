@@ -249,8 +249,9 @@ export default function DecisionTreeRunner({ slug, previewMode, replayMode, repl
     const nodeType = next.node_type;
     const newPath = [...currentPath, { node_id: nextNodeId, entered_at: new Date().toISOString() }];
 
-    // Apply tags
-    const newTags = [...currentTags, ...(next.tags_to_add || [])].filter((t) => !(next.tags_to_remove || []).includes(t));
+    // Apply tags (including auto_tag_visited)
+    const visitedTag = next.config?.auto_tag_visited ? [`visited:${nextNodeId}`] : [];
+    const newTags = [...currentTags, ...(next.tags_to_add || []), ...visitedTag].filter((t) => !(next.tags_to_remove || []).includes(t));
 
     // Persist
     await persistProgress(nextNodeId, currentFV, newTags, newPath);
