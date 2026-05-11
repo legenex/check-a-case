@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Loader2 } from "lucide-react";
 import { submitDecisionTreeForm } from "@/functions/submitDecisionTreeForm";
 
@@ -11,6 +11,8 @@ export default function FormNode({ node, contactForm, fieldValues, runId, sessio
   const tcpaEnabled = contactForm?.tcpa_enabled ?? true;
   const tcpaText = contactForm?.tcpa_text || DEFAULT_TCPA;
   const tcpaMode = contactForm?.tcpa_display_mode || 'implicit';
+  const trustedFormEnabled = contactForm?.trustedform_enabled ?? true;
+  const trustedFormFieldId = contactForm?.trustedform_field_id || 'xxTrustedFormCertUrl';
   const [values, setValues] = useState(() => {
     const init = {};
     fields.forEach((f) => { init[f.custom_field_id] = fieldValues[f.custom_field_id] || ''; });
@@ -19,6 +21,27 @@ export default function FormNode({ node, contactForm, fieldValues, runId, sessio
   const [tcpaChecked, setTcpaChecked] = useState(false);
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+
+  // Inject TrustedForm script if not already present
+  useEffect(() => {
+    if (!trustedFormEnabled) return;
+    // If TrustedForm already loaded (cert URL present in window), skip
+    if (window.trustedForm?.certUrl) return;
+    const existing = document.getElementById('tf-script');
+    if (existing) return;
+    const script = document.createElement('script');
+    script.id = 'tf-script';
+    script.type = 'text/javascript';
+    script.async = true;
+    const field = trustedFormFieldId;
+    const tf = document.createElement('input');
+    tf.type = 'hidden';
+    tf.name = field;
+    tf.id = field;
+    document.forms[0]?.appendChild(tf);
+    script.src = `https://api.trustedform.com/trustedform.js?field=${field}&ping_field=xxTrustedFormPingUrl&use_tagged_consent=false&l=${new Date().getTime()}&${Math.random()}`;
+    document.head.appendChild(script);
+  }, [trustedFormEnabled, trustedFormFieldId]);
 
   const validate = () => {
     const errs = {};
@@ -40,6 +63,11 @@ export default function FormNode({ node, contactForm, fieldValues, runId, sessio
     setSubmitting(true);
     try {
       const merged = { ...fieldValues, ...values };
+      // Capture TrustedForm cert URL from the hidden input injected by their script
+      if (trustedFormEnabled) {
+        const certInput = document.getElementById(trustedFormFieldId);
+        if (certInput?.value) merged.trusted_form_cert_url = certInput.value;
+      }
       const res = await submitDecisionTreeForm({ runId, nodeId: node.id, fieldValues: merged, sessionId });
       if (res.data?.success) {
         onSuccess(res.data);

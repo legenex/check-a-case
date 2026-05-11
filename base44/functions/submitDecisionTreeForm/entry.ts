@@ -37,6 +37,7 @@ Deno.serve(async (req) => {
       zip_code: mergedFields.zip_code || '',
       state: mergedFields.state || mergedFields.accident_state || '',
       field_values: mergedFields,
+      trusted_form_cert_url: mergedFields.trusted_form_cert_url || '',
       status: 'new',
       qualification_tier: run.qualification_tier || null,
       utm_source: run.utm_source || mergedFields.utm_source || '',
