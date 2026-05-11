@@ -214,7 +214,6 @@ export default function DesignCanvas({
     if (pendingConnect && pendingConnect.sourceId === sourceId && pendingConnect.sourceHandle === sourceHandle) {
       // Clicking the same armed handle cancels
       setPendingConnect(null);
-      setCursorWorld(null);
       return;
     }
     setPendingConnect({ sourceId, sourceHandle, color, sourceWorldX: w.x, sourceWorldY: w.y });
@@ -226,12 +225,10 @@ export default function DesignCanvas({
     if (pendingConnect.sourceId === targetId) {
       // No self-connection
       setPendingConnect(null);
-      setCursorWorld(null);
       return;
     }
     onConnect({ source: pendingConnect.sourceId, sourceHandle: pendingConnect.sourceHandle, target: targetId });
     setPendingConnect(null);
-    setCursorWorld(null);
   }, [pendingConnect, onConnect]);
 
   const onOutputPointerDown = useCallback((e, sourceId, sourceHandle, color) => {

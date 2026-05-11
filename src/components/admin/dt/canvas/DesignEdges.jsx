@@ -125,14 +125,14 @@ export default function DesignEdges({
             )}
             {/* Delete button */}
             {(selected || hovered) && (
-              <g transform={`translate(${midX - 10}, ${midY - 10})`} className="pointer-events-auto">
+              <g transform={`translate(${midX - 10}, ${midY - 10})`} className="pointer-events-auto" onClick={(ev) => { ev.stopPropagation(); onDeleteEdge(e.id); }}>
                 <circle cx={10} cy={10} r={9}
                   fill={isLight ? "#fff" : "#1c1c22"}
-                  stroke="#f43f5e" strokeWidth={1.5} />
+                  stroke="#f43f5e" strokeWidth={1.5}
+                  style={{ cursor: "pointer", transition: "all 150ms" }} />
                 <text x={10} y={14} textAnchor="middle"
                   fill="#f43f5e" fontSize={13} fontFamily="monospace"
-                  style={{ cursor: "pointer" }}
-                  onClick={(ev) => { ev.stopPropagation(); onDeleteEdge(e.id); }}>
+                  style={{ cursor: "pointer", pointerEvents: "none" }}>
                   ×
                 </text>
               </g>

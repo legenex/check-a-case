@@ -68,7 +68,7 @@ function OutputRow({ label, accentHex, isLight, showLabel, onOutputClick, onOutp
         <span className={`text-[11px] font-medium truncate ${isLight ? "text-slate-600 group-hover:text-slate-900" : "text-zinc-400 group-hover:text-zinc-100"}`}
               style={{ maxWidth: 180 }} title={label}>{label}</span>
       )}
-      <span className="cc-handle w-3 h-3 rounded-full border-2 absolute right-0 translate-x-1/2 transition-all"
+      <span className="cc-handle w-5 h-5 rounded-full border-2 absolute right-0 translate-x-1/2 transition-all"
             style={{
               background: accentHex,
               borderColor: isLight ? "#fff" : "#1c1c22",
@@ -384,7 +384,7 @@ export default function DesignNode({
             <NodeTitle
               title={node.label || def.label}
               onChange={(v) => onTitleChange?.(node.id, v)}
-              className="text-[13.5px] font-semibold leading-tight"
+              className={`text-[13.5px] font-semibold leading-tight ${isLight ? "" : "text-white"}`}
               style={{ color: titleColor }}
             />
             <div className="mt-0.5 flex items-center gap-1.5">
@@ -433,13 +433,13 @@ export default function DesignNode({
         {/* Input handle — left edge, centered */}
         {!isStart && !isNote && (
           <div
-            className="cc-handle absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 w-3 h-3 rounded-full border-2 z-10"
+            className="cc-handle absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 w-5 h-5 rounded-full border-2 z-10 transition-all"
             style={{
               background: isLight ? "#fff" : "#1c1c22",
               borderColor: accentHex,
               pointerEvents: "auto",
               zIndex: 20,
-              cursor: connectionMode === "click" && pendingConnect ? "crosshair" : "default",
+              cursor: connectionMode === "click" && pendingConnect ? "crosshair" : "pointer",
               boxShadow: pendingConnect && pendingConnect.sourceId !== node.id
                 ? `0 0 0 4px #10b98155, 0 0 12px 2px #10b98188` : undefined,
               animation: pendingConnect && pendingConnect.sourceId !== node.id
@@ -476,7 +476,7 @@ export default function DesignNode({
         {singleOutputNoLabel && (
           <div className="cc-no-drag absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 z-10">
             <div
-              className="cc-handle w-3 h-3 rounded-full border-2"
+              className="cc-handle w-5 h-5 rounded-full border-2 transition-all"
               style={{
                 background: accentHex,
                 borderColor: isLight ? "#fff" : "#1c1c22",
