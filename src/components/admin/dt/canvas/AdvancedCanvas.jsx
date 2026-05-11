@@ -10,6 +10,7 @@ import { DecisionFlowEdge } from "./DecisionFlowEdge";
 import FloatingNodePalette from "./FloatingNodePalette";
 import TreeSettingsDrawer from "./TreeSettingsDrawer";
 import { getCategoryForType } from "./nodeCategories";
+import NodeEditorModal from "@/components/admin/dt/editors/NodeEditorModal";
 
 // Legacy NodePalette no longer used - replaced by FloatingNodePalette
 
@@ -86,42 +87,7 @@ export function bfsLayout(nodes, edges) {
   }));
 }
 
-// Placeholder editor modal
-function NodeEditorModal({ node, onClose }) {
-  useEffect(() => {
-    const handler = (e) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [onClose]);
-
-  if (!node) return null;
-  return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl border border-slate-200 shadow-2xl w-full max-w-lg">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
-          <div>
-            <p className="font-semibold text-slate-900">{node.data?.label || node.data?.node_type}</p>
-            <p className="text-xs text-slate-400 font-mono mt-0.5">{node.data?.node_type}</p>
-          </div>
-          <button onClick={onClose} className="p-1.5 rounded hover:bg-slate-100 transition-colors">
-            <X size={16} className="text-slate-500" />
-          </button>
-        </div>
-        <div className="p-6 text-center space-y-3">
-          <div className="text-4xl">🔧</div>
-          <p className="text-sm font-medium text-slate-700">Per-node-type editor (coming in next build)</p>
-          <p className="text-xs text-slate-400">Use the canvas to wire connections. Full node editor modal coming soon.</p>
-        </div>
-        <div className="px-5 py-3 bg-slate-50 rounded-b-xl border-t border-slate-200 flex justify-end">
-          <button onClick={onClose}
-            className="px-4 py-2 rounded-lg bg-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-300 transition-colors">
-            Close
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
+// Real editor modal is imported from editors/NodeEditorModal
 
 function CanvasInner({
   nodes, edges, onNodesChange, onEdgesChange, onConnect,
@@ -130,13 +96,16 @@ function CanvasInner({
   reactFlowInstance, setReactFlowInstance,
   showAnswers, isDarkMode,
   quiz, quizId, brands, onUpdateQuiz,
-  onRunAutoLayout,
+  onRunAutoLayout, onSaveNode,
 }) {
   const { screenToFlowPosition, setEdges, fitView } = useReactFlow();
   const dragTypeRef = useRef(null);
   const edgeReconnectSuccessful = useRef(true);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [editorNode, setEditorNode] = useState(null);
+
+  // Flatten all nodes for the modal (pass raw data)
+  const allNodeData = nodes.map((n) => ({ ...n.data, _flowId: n.id, position: n.position }));
 
   const onDragStart = useCallback((e, nodeType) => {
     dragTypeRef.current = nodeType;
@@ -224,6 +193,14 @@ function CanvasInner({
   const handleNodeDoubleClick = useCallback((_, node) => {
     setEditorNode(node);
   }, []);
+
+  const handleEditorSave = useCallback((updatedData) => {
+    onSaveNode?.(updatedData);
+  }, [onSaveNode]);
+
+  const handleEditorDelete = useCallback((nodeId) => {
+    onDeleteNode?.(nodeId);
+  }, [onDeleteNode]);
 
   const canvasBg = isDarkMode ? "bg-slate-950" : "bg-slate-50";
   const dotColor = isDarkMode ? "#1e293b" : "#cbd5e1";
@@ -319,9 +296,18 @@ function CanvasInner({
         </Panel>
       </ReactFlow>
 
-      {/* Node editor placeholder modal */}
+      {/* Real per-node-type editor modal */}
       {editorNode && (
-        <NodeEditorModal node={editorNode} onClose={() => setEditorNode(null)} />
+        <NodeEditorModal
+          node={editorNode.data || editorNode}
+          allNodes={allNodeData}
+          allEdges={edges}
+          quiz={quiz}
+          quizId={quizId}
+          onSave={handleEditorSave}
+          onDelete={handleEditorDelete}
+          onClose={() => setEditorNode(null)}
+        />
       )}
     </div>
   );

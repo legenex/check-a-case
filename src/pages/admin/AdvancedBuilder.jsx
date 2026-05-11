@@ -318,6 +318,19 @@ export default function AdvancedBuilder() {
 
   const onPreviewNode = useCallback((node) => setPreviewNode(node), []);
 
+  // Save node data from the editor modal back into flowNodes
+  const onSaveNode = useCallback((updatedData) => {
+    const nodeId = updatedData.node_id || updatedData.id;
+    setFlowNodes((nds) => {
+      const updated = nds.map((n) => {
+        if (n.id === nodeId) return { ...n, data: { ...n.data, ...updatedData } };
+        return n;
+      });
+      scheduleAutoSave(updated, flowEdges);
+      return updated;
+    });
+  }, [flowEdges, scheduleAutoSave]);
+
   // Run auto-layout manually (from Controls button)
   const handleRunAutoLayout = useCallback(() => {
     setFlowNodes((nds) => {
@@ -541,6 +554,7 @@ export default function AdvancedBuilder() {
           brands={brands}
           onUpdateQuiz={(data) => updateQuizMut.mutate(data)}
           onRunAutoLayout={handleRunAutoLayout}
+          onSaveNode={onSaveNode}
           onToolbarStateChange={({ showAnswers: sa, isDarkMode: dm }) => {
             setShowAnswers(sa);
             setIsDarkMode(dm);
