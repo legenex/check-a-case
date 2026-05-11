@@ -85,7 +85,6 @@ const INTEGRATION_META = {
     fields: [
       { key: "api_key", label: "API Key", secret: true },
       { key: "account_id", label: "Account ID" },
-      { key: "retain_cert", label: "Retain Cert URL", placeholder: "https://cert.trustedform.com/..." },
     ],
     color: "bg-teal-100",
     abbr: "TF",
