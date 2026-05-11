@@ -60,33 +60,26 @@ function NodeTitle({ title, onChange, className }) {
   );
 }
 
-function OutputRow({ label, accentHex, isLight, showLabel, onStart }) {
+function OutputRow({ label, accentHex, isLight, showLabel, onStart, nodeId, handleId }) {
   return (
-    <div
-      className="flex items-center justify-between px-3 group"
-      style={{ height: ROW_H, borderTop: `1px solid ${isLight ? "rgba(15,23,42,0.05)" : "rgba(255,255,255,0.04)"}` }}
-    >
-      {showLabel ? (
-        <span className="text-[10.5px] font-medium truncate" style={{ color: isLight ? "#94a3b8" : "#71717a" }}>
-          {label}
-        </span>
-      ) : <span />}
-      <div
-        className="cc-handle w-3 h-3 rounded-full border-2 cursor-crosshair flex-shrink-0 ml-2 relative"
-        style={{
-          background: accentHex,
-          borderColor: isLight ? "#fff" : "#1c1c22",
-          boxShadow: `0 0 0 1px ${accentHex}`,
-        }}
-        data-handle="output"
-        onPointerDown={(e) => { e.stopPropagation(); e.preventDefault(); onStart(e); }}
-      />
+    <div className="cc-no-drag relative flex items-center justify-end gap-2 px-3.5 py-1.5 group cursor-crosshair"
+         onPointerDown={(e) => { e.stopPropagation(); onStart(e); }}>
+      {showLabel && (
+        <span className={`text-[11px] font-medium truncate ${isLight ? "text-slate-600 group-hover:text-slate-900" : "text-zinc-400 group-hover:text-zinc-100"}`}
+              style={{ maxWidth: 180 }} title={label}>{label}</span>
+      )}
+      <span className="cc-handle w-3 h-3 rounded-full border-2 absolute right-0 translate-x-1/2"
+            style={{ background: accentHex, borderColor: isLight ? "#fff" : "#1c1c22", pointerEvents: "auto", zIndex: 20 }}
+            data-handle-output="true"
+            data-node-id={nodeId}
+            data-handle-id={handleId} />
     </div>
   );
 }
 
 function NodeBody({ node, subColor, accentHex, isLight, dt }) {
   const mono = isLight ? "text-slate-500" : "text-zinc-400";
+  const className = "cc-canvas-node";
 
   if (dt === "start") {
     return (
@@ -268,7 +261,8 @@ export default function DesignNode({
     ? accentHex
     : isLight ? "rgba(15,23,42,0.10)" : "rgba(255,255,255,0.07)";
   const titleColor = isLight ? "#0f172a" : "#fafafa";
-  const subColor = isLight ? "#64748b" : "#a1a1aa";
+  const subColor = isLight ? "#64748b" : "#71717a";
+  const secondaryText = isLight ? "#94a3b8" : "#52525b";
 
   const selectedShadow = selected
     ? `0 0 0 2px ${accentHex}, 0 10px 30px -10px ${accentHex}55`
@@ -294,7 +288,7 @@ export default function DesignNode({
 
   return (
     <div
-      className="absolute select-none"
+      className="cc-canvas-node absolute select-none"
       style={{ width: NODE_W, left: node.position.x, top: node.position.y, willChange: "transform" }}
       onPointerDown={onPointerDown}
       onMouseEnter={() => setHovered(true)}
@@ -380,8 +374,8 @@ export default function DesignNode({
               <span className="text-[10px] uppercase tracking-[0.08em] font-medium" style={{ color: accentHex }}>
                 {visual.label.toUpperCase()}
               </span>
-              <span className="text-[10px]" style={{ color: isLight ? "#94a3b8" : "#52525b" }}>·</span>
-              <span className="text-[9.5px] font-mono" style={{ color: isLight ? "#94a3b8" : "#52525b" }}>
+              <span className="text-[10px]" style={{ color: secondaryText }}>·</span>
+              <span className="text-[9.5px] font-mono" style={{ color: secondaryText }}>
                 {node.id.slice(0, 8)}
               </span>
             </div>
@@ -422,13 +416,10 @@ export default function DesignNode({
         {/* Input handle — left edge, centered */}
         {!isStart && !isNote && (
           <div
-            data-handle="input"
-            className="cc-handle absolute left-0 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2 z-10 cursor-crosshair"
-            style={{
-              background: isLight ? "#fff" : "#1c1c22",
-              borderColor: accentHex,
-            }}
-            onPointerUp={(e) => { e.stopPropagation(); onConnectEnd?.(e, node.id); }}
+            className="cc-handle absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 w-3 h-3 rounded-full border-2"
+            style={{ background: isLight ? "#fff" : "#1c1c22", borderColor: accentHex, pointerEvents: "auto", zIndex: 20 }}
+            data-handle-input="true"
+            data-node-id={node.id}
           />
         )}
 
@@ -442,6 +433,8 @@ export default function DesignNode({
                 accentHex={accentHex}
                 isLight={isLight}
                 showLabel
+                nodeId={node.id}
+                handleId={o.id}
                 onStart={(e) => onStartConnect(e, node.id, o.id, accentHex)}
               />
             ))}
@@ -451,15 +444,11 @@ export default function DesignNode({
         {/* Single-output handle — right edge centered (no label row) */}
         {singleOutputNoLabel && (
           <div
-            data-handle="output"
-            data-handle-id={outs[0].id}
+            className="cc-handle absolute right-0 top-1/2 translate-x-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2"
+            style={{ background: accentHex, borderColor: isLight ? "#fff" : "#1c1c22", pointerEvents: "auto", zIndex: 20 }}
+            data-handle-output="true"
             data-node-id={node.id}
-            className="cc-handle absolute right-0 top-1/2 translate-x-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2 z-10 cursor-crosshair"
-            style={{
-              background: accentHex,
-              borderColor: isLight ? "#fff" : "#1c1c22",
-              boxShadow: `0 0 0 1px ${accentHex}`,
-            }}
+            data-handle-id={outs[0].id}
             onPointerDown={(e) => {
               e.stopPropagation();
               e.preventDefault();
@@ -476,6 +465,8 @@ export default function DesignNode({
               accentHex={accentHex}
               isLight={isLight}
               showLabel
+              nodeId={node.id}
+              handleId={outs[0].id}
               onStart={(e) => onStartConnect(e, node.id, outs[0].id, accentHex)}
             />
           </div>

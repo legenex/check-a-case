@@ -204,23 +204,58 @@ export default function DesignCanvas({
   }, [marquee, nodes, viewport, onSelect]);
 
   // Connect start/end
-  const onStartConnect = useCallback((e, nodeId, handleId, color) => {
-    const rect = wrapRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const world = screenToWorld(e.clientX - rect.left, e.clientY - rect.top, viewport);
-    connectRef.current = { sourceId: nodeId, sourceHandle: handleId, color, sx: world.x, sy: world.y, ex: world.x, ey: world.y };
-    wrapRef.current?.setPointerCapture(e.pointerId);
-  }, [viewport]);
+  const onStartConnect = (e, sourceId, sourceHandle, color) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const rect = wrapRef.current.getBoundingClientRect();
+    const startScreen = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    const startWorld = screenToWorld(startScreen.x, startScreen.y, viewport);
+    const origin = { sx: e.clientX, sy: e.clientY };
+    let moved = false;
 
-  const onConnectEnd = useCallback((e, targetId) => {
-    if (!connectRef.current) return;
-    const { sourceId, sourceHandle } = connectRef.current;
-    setGhostEdge(null);
-    connectRef.current = null;
-    if (sourceId !== targetId) {
-      onConnect({ source: sourceId, sourceHandle, target: targetId, targetHandle: "in" });
-    }
-  }, [onConnect]);
+    const move = (ev) => {
+      const dx = ev.clientX - origin.sx;
+      const dy = ev.clientY - origin.sy;
+      if (!moved && (Math.abs(dx) > 4 || Math.abs(dy) > 4)) {
+        moved = true;
+        setGhostEdge({ from: startWorld, to: startWorld, color });
+      }
+      if (!moved) return;
+      const cx = ev.clientX - rect.left;
+      const cy = ev.clientY - rect.top;
+      const w = screenToWorld(cx, cy, viewport);
+      setGhostEdge(g => g ? { ...g, to: w } : null);
+    };
+
+    const up = (ev) => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      if (!moved) {
+        setGhostEdge(null);
+        return;
+      }
+      const elTarget = document.elementFromPoint(ev.clientX, ev.clientY);
+      const inputEl = elTarget && elTarget.closest("[data-handle-input]");
+      if (inputEl) {
+        const targetId = inputEl.getAttribute("data-node-id");
+        if (targetId && targetId !== sourceId) {
+          onConnect({ source: sourceId, sourceHandle, target: targetId });
+        }
+      } else {
+        const onNode = elTarget && elTarget.closest(".cc-canvas-node");
+        if (!onNode) {
+          const cx = ev.clientX - rect.left;
+          const cy = ev.clientY - rect.top;
+          const w = screenToWorld(cx, cy, viewport);
+          setQuickAdd({ screenX: cx, screenY: cy, worldX: w.x, worldY: w.y, source: sourceId, sourceHandle });
+        }
+      }
+      setGhostEdge(null);
+    };
+
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
 
   const onQuickAddSelect = useCallback((typeKey) => {
     if (!quickAdd) return;
@@ -318,7 +353,6 @@ export default function DesignCanvas({
             onSelect={(id, shift) => onSelect([id], shift)}
             onMove={onMoveNode}
             onStartConnect={onStartConnect}
-            onConnectEnd={onConnectEnd}
             onTitleChange={onTitleCommit}
             onDeleteNode={onNodeDelete}
             onDuplicateNode={onNodeDuplicate}

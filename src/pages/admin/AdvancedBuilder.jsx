@@ -609,8 +609,14 @@ export default function AdvancedBuilder() {
     });
   }, []);
 
+  // Lock body scroll
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, []);
+
   if (loadingQuiz || loadingQ || loadingE) {
-    return <div className="flex items-center justify-center h-screen bg-[#0d0d11]"><Loader2 className="w-7 h-7 animate-spin text-slate-500" /></div>;
+    return <div className="flex items-center justify-center h-screen bg-zinc-950"><Loader2 className="w-7 h-7 animate-spin text-slate-500" /></div>;
   }
   if (!quiz) return <div className="p-8 text-slate-500">Decision tree not found.</div>;
 
@@ -659,8 +665,8 @@ export default function AdvancedBuilder() {
         @keyframes ccSaving { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
       `}</style>
       <div
-        className="flex flex-col overflow-hidden -m-4 sm:-m-6 lg:-m-8"
-        style={{ height: "100vh", fontFamily: "Inter, sans-serif", fontFeatureSettings: '"cv11","ss01","ss03"', letterSpacing: "-0.005em" }}
+        className="fixed inset-0 z-50 flex flex-col bg-zinc-950"
+        style={{ fontFamily: "Inter, sans-serif", fontFeatureSettings: '"cv11","ss01","ss03"', letterSpacing: "-0.005em" }}
       >
         {/* TOPBAR */}
         <div

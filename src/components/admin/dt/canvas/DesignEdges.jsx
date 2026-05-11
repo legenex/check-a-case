@@ -143,11 +143,9 @@ export default function DesignEdges({
 
       {/* Ghost edge while connecting */}
       {ghostEdge && (
-        <path
-          d={bezierPath({ x: ghostEdge.sx, y: ghostEdge.sy }, { x: ghostEdge.ex, y: ghostEdge.ey })}
-          stroke={ghostEdge.color || (isLight ? "#94a3b8" : "#a1a1aa")}
-          strokeWidth={2} fill="none"
-          strokeDasharray="6 5" opacity={0.85} />
+        <path d={bezierPath(ghostEdge.from, ghostEdge.to)}
+              stroke={ghostEdge.color || "#a1a1aa"} strokeWidth={2} fill="none"
+              strokeDasharray="6 5" opacity={0.85} pointerEvents="none" />
       )}
     </svg>
   );
