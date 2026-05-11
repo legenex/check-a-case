@@ -75,6 +75,53 @@ Deno.serve(async (req) => {
       console.warn('TrustedForm cert URL missing for lead. Ensure the TrustedForm script is loaded on the form page.');
     }
 
+    // ── HLR Lookup: validate phone number (non-blocking — lead always captured) ─
+    let hlrResult = null;
+    const phone = mergedFields.phone || mergedFields.phone_number || '';
+
+    if (phone) {
+      try {
+        const hlrConfigs = await base44.asServiceRole.entities.IntegrationConfig.filter({ type: 'hlr_lookup' });
+        const hlrConfig = hlrConfigs.find((c) => c.enabled);
+        const hlrApiKey = hlrConfig?.credentials?.api_key;
+        const hlrProvider = hlrConfig?.credentials?.provider || '';
+        const hlrEndpoint = hlrConfig?.credentials?.endpoint || '';
+
+        if (hlrApiKey && hlrEndpoint) {
+          // Normalize phone: strip non-digits, ensure leading +
+          const normalizedPhone = phone.replace(/\D/g, '');
+          const e164Phone = normalizedPhone.startsWith('1') ? `+${normalizedPhone}` : `+1${normalizedPhone}`;
+
+          const hlrRes = await Promise.race([
+            fetch(`${hlrEndpoint.replace(/\/$/, '')}?number=${encodeURIComponent(e164Phone)}`, {
+              method: 'GET',
+              headers: {
+                'Authorization': `Bearer ${hlrApiKey}`,
+                'Content-Type': 'application/json',
+              },
+            }),
+            new Promise((_, rej) => setTimeout(() => rej(new Error('HLR timeout')), 8000)),
+          ]);
+
+          if (hlrRes.ok) {
+            hlrResult = await hlrRes.json();
+            console.log('HLR result:', JSON.stringify(hlrResult));
+          } else {
+            const errText = await hlrRes.text();
+            console.warn('HLR lookup failed:', hlrRes.status, errText);
+            hlrResult = { error: `HTTP ${hlrRes.status}`, raw: errText.slice(0, 200) };
+          }
+        } else if (hlrConfig) {
+          console.warn('HLR integration enabled but endpoint/api_key not configured.');
+        }
+        // If no HLR config at all, silently skip
+      } catch (err) {
+        console.error('HLR lookup error:', err.message);
+        hlrResult = { error: err.message };
+        // Non-fatal: lead is still captured
+      }
+    }
+
     // Create Lead record
     const lead = await base44.asServiceRole.entities.Lead.create({
       quiz_id: run.quiz_id,
@@ -88,6 +135,7 @@ Deno.serve(async (req) => {
       state: mergedFields.state || mergedFields.accident_state || '',
       field_values: mergedFields,
       trusted_form_cert_url: trustedFormCertUrl,
+      hlr_result: hlrResult,
       status: 'new',
       qualification_tier: run.qualification_tier || null,
       utm_source: run.utm_source || mergedFields.utm_source || '',
@@ -127,6 +175,7 @@ Deno.serve(async (req) => {
       success: true,
       lead_id: lead.id,
       next_node_id: node.config?.on_success_target_node_id || null,
+      hlr_result: hlrResult,
     });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
