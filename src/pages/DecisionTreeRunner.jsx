@@ -132,7 +132,7 @@ export default function DecisionTreeRunner({ slug, previewMode, replayMode, repl
           setPathTaken(replayRun.path_taken || []);
           runRef.current = { ...replayRun, _replay: true };
           setRunId(replayRun.id);
-          const startNode = graph.nodeMap[replayRun.path_taken?.[0]?.node_id] || findStartNode(allNodes);
+          const startNode = graph.nodeMap[replayRun.path_taken?.[0]?.node_id] || findStartNode(allNodes, allEdges);
           if (startNode) {
             setCurrentNodeId(startNode.node_id || startNode.id);
             setPhase('running');
@@ -158,7 +158,7 @@ export default function DecisionTreeRunner({ slug, previewMode, replayMode, repl
 
         const startNode = run.current_node_id
           ? graph.nodeMap[run.current_node_id]
-          : findStartNode(allNodes);
+          : findStartNode(allNodes, allEdges);
         if (startNode) {
           setCurrentNodeId(startNode.node_id || startNode.id);
           setPhase('running');
@@ -204,7 +204,7 @@ export default function DecisionTreeRunner({ slug, previewMode, replayMode, repl
       runRef.current = newRun;
       setRunId(newRun.id);
 
-      const startNode = findStartNode(allNodes);
+      const startNode = findStartNode(allNodes, allEdges);
       if (!startNode) { setPhase('not_found'); return; }
 
       setCurrentNodeId(startNode.node_id || startNode.id);
@@ -216,8 +216,16 @@ export default function DecisionTreeRunner({ slug, previewMode, replayMode, repl
     }
   };
 
-  const findStartNode = (allNodes) => {
-    return allNodes.find((n) => n.node_type === 'start_page') || allNodes[0] || null;
+  const findStartNode = (allNodes, allEdges) => {
+    // Find the true entry node: node with no inbound edges
+    const hasInbound = new Set((allEdges || []).map((e) => e.target_node_id));
+    const candidates = allNodes.filter((n) => !hasInbound.has(n.node_id || n.id));
+    if (candidates.length === 1) return candidates[0];
+    // Fallback: prefer start_page type, then first node
+    return candidates.find((n) => n.node_type === 'start_page')
+      || allNodes.find((n) => n.node_type === 'start_page')
+      || allNodes[0]
+      || null;
   };
 
   const persistProgress = useCallback(async (nodeId, newFieldValues, newTags, newPath) => {
