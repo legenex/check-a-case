@@ -11,13 +11,6 @@ export const RESULT_KINDS = {
 // Design type -> node_type/config.kind mapping
 // "type" here is the short design key (start, single_choice, etc.)
 export const NODE_TYPES = {
-  start: {
-    label: "Start", category: "System", accent: "violet", icon: "Zap",
-    description: "Entry point. Initialize variables.",
-    node_type: "start_page", config_kind: null,
-    outputs: () => [{ id: "next", label: "" }],
-    defaults: () => ({ title: "When session starts" }),
-  },
   single_choice: {
     label: "Single Choice", category: "Questions", accent: "sky", icon: "HelpCircle",
     description: "Pick one answer. One output per option.",
@@ -156,7 +149,7 @@ export function designType(question) {
   const nt = question.node_type;
   const kind = question.config?.kind;
 
-  if (nt === "start_page") return "start";
+  if (nt === "start_page") return "single_choice"; // treat legacy start_page as single_choice
   if (nt === "single_select") return "single_choice";
   if (nt === "checkbox_multi_select") return "multi_choice";
   if (nt === "text_field") return kind === "email" ? "email_input" : "text_input";

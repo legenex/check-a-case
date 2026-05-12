@@ -109,13 +109,6 @@ function NodeBody({ node, subColor, accentHex, isLight, dt }) {
   const mono = isLight ? "text-slate-500" : "text-zinc-400";
   const className = "cc-canvas-node";
 
-  if (dt === "start") {
-    return (
-      <p className={`text-[11px] ${mono} line-clamp-2`}>
-        {node.title_display || node.label || "Entry point"}
-      </p>
-    );
-  }
   if (dt === "single_choice") {
     const q = node.title_display || node.help_text || "Your question?";
     return <p className={`text-[11px] ${mono} line-clamp-2`}>{q}</p>;
@@ -259,7 +252,6 @@ export default function DesignNode({
 
   const isOrphan = validation?.orphans?.has(node.id);
   const isDead = validation?.deadEnds?.has(node.id);
-  const isStart = dt === "start";
   const isNote = dt === "note";
 
   const onPointerDown = useCallback((e) => {
@@ -468,7 +460,7 @@ export default function DesignNode({
         </div>
 
         {/* Input handle — left edge, centered */}
-        {!isStart && !isNote && (
+        {!isNote && (
           <div
             className="cc-handle absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 w-5 h-5 rounded-full border-2 z-10"
             style={{
