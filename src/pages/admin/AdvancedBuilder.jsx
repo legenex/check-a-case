@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import {
   ArrowLeft, Sun, Moon, RotateCcw, RotateCw, LayoutGrid,
-  AlertCircle, Play, Download, HelpCircle, Zap, CheckCircle2
+  AlertCircle, Play, Download, HelpCircle, Zap, CheckCircle2, Eye
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { Loader2 } from "lucide-react";
@@ -979,6 +979,20 @@ export default function AdvancedBuilder() {
               </button>
             </TooltipTrigger>
             <TooltipContent>Export JSON</TooltipContent>
+          </Tooltip>
+
+          {/* Preview */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => window.open(`/q/${quiz.slug || quizId}`, "_blank")}
+                className="p-1.5 rounded transition-colors hover:bg-violet-500/10"
+                style={{ color: textSecondary }}
+              >
+                <Eye size={14} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>Preview quiz</TooltipContent>
           </Tooltip>
 
           {/* Help */}
