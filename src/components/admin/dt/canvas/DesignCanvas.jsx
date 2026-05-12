@@ -25,6 +25,7 @@ export default function DesignCanvas({
   validation, connectionMode,
 }) {
   const wrapRef = useRef(null);
+  const hasInitialFit = useRef(false);
   const ghostPathRef = useRef(null);
   const [viewport, setViewport] = useState({ x: 80, y: 80, zoom: 0.82 });
   const [spaceDown, setSpaceDown] = useState(false);
@@ -106,10 +107,14 @@ export default function DesignCanvas({
     });
   }, [nodes]);
 
+  // Fit view once when nodes first populate (mount-time nodes is always empty)
   useEffect(() => {
-    const t = setTimeout(() => fitView(nodes), 120);
-    return () => clearTimeout(t);
-  }, []);
+    if (nodes.length > 0 && !hasInitialFit.current) {
+      hasInitialFit.current = true;
+      const t = setTimeout(() => fitView(nodes), 150);
+      return () => clearTimeout(t);
+    }
+  }, [nodes.length, fitView]);
 
   const jumpToNode = useCallback((nodeId) => {
     const n = nodes.find((nd) => nd.id === nodeId);
