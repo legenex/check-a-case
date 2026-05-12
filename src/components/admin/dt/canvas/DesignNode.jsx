@@ -371,7 +371,7 @@ export default function DesignNode({
         }}
       >
         {/* Hover action buttons */}
-        {(hovered || selected) && !isStart && (
+        {(hovered || selected) && (
           <div
             data-no-drag
             className="absolute -top-3 right-2 flex items-center gap-0 rounded-lg overflow-hidden border shadow-lg z-10"
